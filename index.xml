@@ -7,12 +7,12 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <lastBuildDate>Mon, 02 Mar 2026 13:57:00 +0800</lastBuildDate><atom:link href="https://w2343419-del.github.io/WangScape/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>动态规划与状态转移方程</title>
-        <link>https://w2343419-del.github.io/WangScape/p/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%E4%B8%8E%E7%8A%B6%E6%80%81%E8%BD%AC%E7%A7%BB%E6%96%B9%E7%A8%8B/</link>
+        <title>状态转移方程，与动态规划</title>
+        <link>https://w2343419-del.github.io/WangScape/p/%E7%8A%B6%E6%80%81%E8%BD%AC%E7%A7%BB%E6%96%B9%E7%A8%8B%E4%B8%8E%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/</link>
         <pubDate>Mon, 02 Mar 2026 13:57:00 +0800</pubDate>
         
-        <guid>https://w2343419-del.github.io/WangScape/p/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%E4%B8%8E%E7%8A%B6%E6%80%81%E8%BD%AC%E7%A7%BB%E6%96%B9%E7%A8%8B/</guid>
-        <description>&lt;p&gt;几乎在任何一道算法题里，都能看见动态规划的影子，所以在此总结一下动态规划（DP）和其中非常重要的一个部分——状态转移方程。&lt;/p&gt;
+        <guid>https://w2343419-del.github.io/WangScape/p/%E7%8A%B6%E6%80%81%E8%BD%AC%E7%A7%BB%E6%96%B9%E7%A8%8B%E4%B8%8E%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/</guid>
+        <description>&lt;p&gt;在算法题当中，我们经常可以看见动态规划的影子，所以在此总结一下动态规划（DP）和其中非常重要的一个部分——状态转移方程。&lt;/p&gt;
 &lt;h2 id=&#34;一何为动态规划&#34;&gt;一、何为动态规划
 &lt;/h2&gt;&lt;p&gt;动态规划（Dynamic Programming，DP）是一种通过把原问题分解为子问题来求解的算法思想。&lt;/p&gt;
 &lt;p&gt;动态规划不是某种具体的数据结构，而是一种思维方式。&lt;/p&gt;
@@ -1172,11 +1172,11 @@ in → out：再加一条容量 1，费用 0（允许第二条路径经过但不
 </description>
         </item>
         <item>
-        <title>你好，欢迎来到我的博客</title>
-        <link>https://w2343419-del.github.io/WangScape/p/%E4%BD%A0%E5%A5%BD%E6%AC%A2%E8%BF%8E%E6%9D%A5%E5%88%B0%E6%88%91%E7%9A%84%E5%8D%9A%E5%AE%A2/</link>
+        <title>高山流水，觅知音</title>
+        <link>https://w2343419-del.github.io/WangScape/p/%E9%AB%98%E5%B1%B1%E6%B5%81%E6%B0%B4%E8%A7%85%E7%9F%A5%E9%9F%B3/</link>
         <pubDate>Tue, 03 Feb 2026 13:28:00 +0800</pubDate>
         
-        <guid>https://w2343419-del.github.io/WangScape/p/%E4%BD%A0%E5%A5%BD%E6%AC%A2%E8%BF%8E%E6%9D%A5%E5%88%B0%E6%88%91%E7%9A%84%E5%8D%9A%E5%AE%A2/</guid>
+        <guid>https://w2343419-del.github.io/WangScape/p/%E9%AB%98%E5%B1%B1%E6%B5%81%E6%B0%B4%E8%A7%85%E7%9F%A5%E9%9F%B3/</guid>
         <description>&lt;p&gt;经过了近一天的半天自我怀疑、半天与 AI 搏斗（doge）和全天用头与桌子比硬度&amp;hellip;&amp;hellip;&lt;/p&gt;
 &lt;p&gt;2026 年 1 月 21 日最终成为了一个对我而言非同寻常的日子。&lt;/p&gt;
 &lt;p&gt;我的个人博客终于上线了！！！&lt;/p&gt;
@@ -1196,40 +1196,6 @@ in → out：再加一条容量 1，费用 0（允许第二条路径经过但不
 &lt;p&gt;（ps. 现在的博客还比较粗糙，但以后会更好的！）&lt;/p&gt;
 &lt;hr&gt;
 &lt;p&gt;&lt;em&gt;编辑于 2026 年 2 月 3 日&lt;/em&gt;&lt;/p&gt;
-</description>
-        </item>
-        <item>
-        <title>网站修复总结</title>
-        <link>https://w2343419-del.github.io/WangScape/p/%E7%BD%91%E7%AB%99%E4%BF%AE%E5%A4%8D%E6%80%BB%E7%BB%93/</link>
-        <pubDate>Mon, 02 Feb 2026 12:14:00 +0800</pubDate>
-        
-        <guid>https://w2343419-del.github.io/WangScape/p/%E7%BD%91%E7%AB%99%E4%BF%AE%E5%A4%8D%E6%80%BB%E7%BB%93/</guid>
-        <description>&lt;p&gt;在最近的开发迭代中，对网站进行了多项功能修复和功能扩展，以下是主要的改动列表。&lt;/p&gt;
-&lt;h2 id=&#34;界面与显示问题修复&#34;&gt;界面与显示问题修复
-&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;修复了左下栏动画卡顿问题&lt;/li&gt;
-&lt;li&gt;修复了中英文界面的切换问题&lt;/li&gt;
-&lt;li&gt;修复了头像显示问题&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;功能扩展与优化&#34;&gt;功能扩展与优化
-&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;修复了计数功能的问题，解决了 Umami API 的调用问题&lt;/li&gt;
-&lt;li&gt;推出了网站文章写作推送助手 &lt;strong&gt;WSwriter&lt;/strong&gt;，满足在类 Office 界面进行写作的需求
-&lt;ul&gt;
-&lt;li&gt;支持一键预览、提交、修改、删除文章&lt;/li&gt;
-&lt;li&gt;支持插入代码、图片与表格&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;用户互动功能&#34;&gt;用户互动功能
-&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;添加了评论功能&lt;/li&gt;
-&lt;li&gt;修复了 WSwriter 添加标签时出现的双引号错误&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;安全性维护&#34;&gt;安全性维护
-&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;对网站安全性进行了全面维护&lt;/li&gt;
-&lt;/ul&gt;
 </description>
         </item>
         <item>

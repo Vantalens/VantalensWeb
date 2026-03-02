@@ -7,12 +7,12 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>en</language>
         <lastBuildDate>Mon, 02 Mar 2026 13:57:00 +0800</lastBuildDate><atom:link href="https://w2343419-del.github.io/WangScape/en/tags/%E7%8A%B6%E6%80%81%E8%BD%AC%E7%A7%BB%E6%96%B9%E7%A8%8B/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>Dynamic Planning and State Transition Equation</title>
-        <link>https://w2343419-del.github.io/WangScape/en/p/dynamic-planning-and-state-transition-equation/</link>
+        <title>State Transition Equation, with Dynamic Programming</title>
+        <link>https://w2343419-del.github.io/WangScape/en/p/state-transition-equation-with-dynamic-programming/</link>
         <pubDate>Mon, 02 Mar 2026 13:57:00 +0800</pubDate>
         
-        <guid>https://w2343419-del.github.io/WangScape/en/p/dynamic-planning-and-state-transition-equation/</guid>
-        <description>&lt;p&gt;The shadow of dynamic programming can be seen in almost any algorithmic problem, so here is a summary of dynamic programming (DP) and a very important part of it - the state transition equation.&lt;/p&gt;
+        <guid>https://w2343419-del.github.io/WangScape/en/p/state-transition-equation-with-dynamic-programming/</guid>
+        <description>&lt;p&gt;In algorithmic problems, we can often see the shadow of dynamic programming, so here is a summary of dynamic programming (DP) and a very important part of it - the state transition equation.&lt;/p&gt;
 &lt;h2 id=&#34;一何为动态规划&#34;&gt;一、何为动态规划
 &lt;/h2&gt;&lt;p&gt;Dynamic Programming (DP) is an algorithmic idea that solves the original problem by decomposing it into sub-problems.&lt;/p&gt;
 &lt;p&gt;Dynamic planning is not some specific data structure, but a way of thinking.&lt;/p&gt;

@@ -7,12 +7,12 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>en</language>
         <lastBuildDate>Mon, 02 Mar 2026 13:57:00 +0800</lastBuildDate><atom:link href="https://w2343419-del.github.io/WangScape/en/post/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>Dynamic Planning and State Transition Equation</title>
-        <link>https://w2343419-del.github.io/WangScape/en/p/dynamic-planning-and-state-transition-equation/</link>
+        <title>State Transition Equation, with Dynamic Programming</title>
+        <link>https://w2343419-del.github.io/WangScape/en/p/state-transition-equation-with-dynamic-programming/</link>
         <pubDate>Mon, 02 Mar 2026 13:57:00 +0800</pubDate>
         
-        <guid>https://w2343419-del.github.io/WangScape/en/p/dynamic-planning-and-state-transition-equation/</guid>
-        <description>&lt;p&gt;The shadow of dynamic programming can be seen in almost any algorithmic problem, so here is a summary of dynamic programming (DP) and a very important part of it - the state transition equation.&lt;/p&gt;
+        <guid>https://w2343419-del.github.io/WangScape/en/p/state-transition-equation-with-dynamic-programming/</guid>
+        <description>&lt;p&gt;In algorithmic problems, we can often see the shadow of dynamic programming, so here is a summary of dynamic programming (DP) and a very important part of it - the state transition equation.&lt;/p&gt;
 &lt;h2 id=&#34;一何为动态规划&#34;&gt;一、何为动态规划
 &lt;/h2&gt;&lt;p&gt;Dynamic Programming (DP) is an algorithmic idea that solves the original problem by decomposing it into sub-problems.&lt;/p&gt;
 &lt;p&gt;Dynamic planning is not some specific data structure, but a way of thinking.&lt;/p&gt;
@@ -776,60 +776,31 @@ This person travels from A to B twice. Find 2 such paths so that the sum of coll
 </description>
         </item>
         <item>
-        <title>Hello and Welcome to My Blog</title>
-        <link>https://w2343419-del.github.io/WangScape/en/p/hello-and-welcome-to-my-blog/</link>
+        <title>Alpine flowing water, searching for sound</title>
+        <link>https://w2343419-del.github.io/WangScape/en/p/alpine-flowing-water-searching-for-sound/</link>
         <pubDate>Tue, 03 Feb 2026 13:28:00 +0800</pubDate>
         
-        <guid>https://w2343419-del.github.io/WangScape/en/p/hello-and-welcome-to-my-blog/</guid>
-        <description>&lt;p&gt;After nearly a full day of half-self-doubt, half-struggling with AI (lol), and the entire time having a hardness competition between my head and the table&amp;hellip;&lt;/p&gt;
+        <guid>https://w2343419-del.github.io/WangScape/en/p/alpine-flowing-water-searching-for-sound/</guid>
+        <description>&lt;p&gt;After nearly a day of half-day self-doubt, half-day struggle with AI (doge) and all-day hardness ratio with head and table&amp;hellip;&lt;/p&gt;
 &lt;p&gt;January 21, 2026 finally became an extraordinary day for me.&lt;/p&gt;
 &lt;p&gt;My personal blog is finally live!!!&lt;/p&gt;
-&lt;h2 id=&#34;blog-objectives&#34;&gt;Blog Objectives
+&lt;h2 id=&#34;博客的目标&#34;&gt;博客的目标
 &lt;/h2&gt;&lt;p&gt;I will record here:&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;Summaries of difficulties, gains, and knowledge points encountered in programming&lt;/li&gt;
-&lt;li&gt;Learning experiences and algorithmic analysis&lt;/li&gt;
-&lt;li&gt;Occasional grievances and book reviews&lt;/li&gt;
+&lt;li&gt;Summary of difficulties, gains and knowledge points encountered in programming
+-Learning experience and algorithmic analysis&lt;/li&gt;
+&lt;li&gt;Occasional complaints and book reviews&lt;/li&gt;
 &lt;li&gt;Favorite poems and other cultural content&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;Maybe this blog will become my full-discipline notebook? (at least during university)&lt;/p&gt;
-&lt;p&gt;In addition to code, it may also involve fields like artificial intelligence, games, music, movies, and more. I will do my best to keep my blog focused on learning.&lt;/p&gt;
-&lt;h2 id=&#34;closing-thoughts&#34;&gt;Closing Thoughts
-&lt;/h2&gt;&lt;p&gt;Although I don&amp;rsquo;t know if I can always maintain this blog (I&amp;rsquo;m a bit lazy after all), I will do my best.&lt;/p&gt;
-&lt;p&gt;I hope my update frequency won&amp;rsquo;t be too low&amp;hellip;&lt;/p&gt;
-&lt;p&gt;(P.S. The blog is rough now, but it will be better in the future!)&lt;/p&gt;
+&lt;p&gt;Maybe this blog will be my all-disciplinary notebook? (at least during university)&lt;/p&gt;
+&lt;p&gt;In addition to code, it may also involve artificial intelligence, games, music, movies and other fields. I do my best to keep my blog focused on learning.&lt;/p&gt;
+&lt;h2 id=&#34;写在末尾&#34;&gt;写在末尾
+&lt;/h2&gt;&lt;p&gt;Although I don&amp;rsquo;t know if I can always maintain this blog (a bit lazy after all), I will do my best.&lt;/p&gt;
+&lt;p&gt;I hope my update frequency is not too low&amp;hellip;&lt;/p&gt;
+&lt;p&gt;(ps. Blogs are rough now, but better later!)&lt;/p&gt;
 &lt;hr&gt;
-&lt;p&gt;&lt;em&gt;Edited February 3, 2026&lt;/em&gt;&lt;/p&gt;
-</description>
-        </item>
-        <item>
-        <title>Site Repair Summary</title>
-        <link>https://w2343419-del.github.io/WangScape/en/p/site-repair-summary/</link>
-        <pubDate>Mon, 02 Feb 2026 12:14:00 +0800</pubDate>
-        
-        <guid>https://w2343419-del.github.io/WangScape/en/p/site-repair-summary/</guid>
-        <description>&lt;p&gt;In a recent development cycle, I completed a set of fixes and feature updates for the site.&lt;/p&gt;
-&lt;h2 id=&#34;ui-and-display-fixes&#34;&gt;UI and display fixes
-&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;Fixed animation stuttering in the lower-left sidebar&lt;/li&gt;
-&lt;li&gt;Fixed language switching between Chinese and English&lt;/li&gt;
-&lt;li&gt;Fixed avatar rendering issues&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;features-and-workflow-updates&#34;&gt;Features and workflow updates
-&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;Fixed the page view counting issue and resolved Umami API integration&lt;/li&gt;
-&lt;li&gt;Released &lt;strong&gt;WSwriter&lt;/strong&gt;, an article writing and publishing assistant
 &lt;ul&gt;
-&lt;li&gt;Supports one-click preview, submit, edit, and delete&lt;/li&gt;
-&lt;li&gt;Supports inserting code blocks, images, and tables&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;interaction-and-reliability&#34;&gt;Interaction and reliability
-&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;Added comment functionality&lt;/li&gt;
-&lt;li&gt;Fixed the double-quote bug when adding tags in WSwriter&lt;/li&gt;
-&lt;li&gt;Performed general security maintenance for the site&lt;/li&gt;
+&lt;li&gt;Edited February 3, 2026 *&lt;/li&gt;
 &lt;/ul&gt;
 </description>
         </item>
