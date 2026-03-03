@@ -1,372 +1,176 @@
 ---
 tags:
-    - Algorithm
+    - 动态规划
+    - DFS
+    - 费用流
 categories:
-    - Algorithm
+    - 算法
 pinned: false
-title: "P1004 [NOIP 2000 Improvement Group] Grid Number Collection - Analysis and Summary"
-description: "Multiple solution approaches for the classic grid path problem: Dynamic Programming, DFS with Memoization, and Minimum Cost Maximum Flow"
+title: "P1004 [NOIP 2000 improvement group] grid score analysis and summary"
+description: "经典棋盘模型问题的多种解法分析：动态规划、DFS 记忆化和费用流"
 date: 2026-02-28T11:31:00+08:00
 image: ""
-math: false
+math: true
 license: ""
 hidden: false
 comments: true
 draft: false
+ws_sync_zh_hash: "8e2d9fabdeb44c4bc5a279e90a64f0ec4c8c65516e934f8ee4a5f0e7828f4a13"
 ---
 
-This is a classic but challenging grid path problem. Although it is a NOIP 2000 final problem, it remains quite difficult for those encountering it for the first time. This article summarizes three different approaches: Dynamic Programming, DFS with Memoization, and Minimum Cost Maximum Flow, progressing gradually from easy to difficult.
+This is a classic but difficult chessboard problem. Although it is the topic of NOIP in 2000, it is still quite difficult for first-time contacts as the final topic. This paper summarizes three different solutions: Dynamic Planning, DFS Memorization, and Minimum Cost Maximum Flow, which unfolds gradually from easy to difficult.
 
-## Problem Background and Description
+## 问题
 
-NOIP 2000 Improvement Group T4
+### 题目来源
+NOIP 2000 提高组 T4
 
-### Problem Statement
+### 问题描述
 
-There is an N×N grid (N≤9) in which some cells contain positive integers, while others contain 0.
-A person starts at point A (0, 0) in the top-left corner and can move either down or right until reaching point B (N, N) in the bottom-right corner. Along the way, they can collect the number in each cell (which then becomes 0).
-This person travels from A to B twice. Find 2 such paths so that the sum of collected numbers is maximized.
+There is a square diagram of N × N (N ≤ 9), some of which we fill in positive integers, while others put the number 0.
+Someone starts at point A (0, 0) in the top left corner of the diagram and can walk down or to the right until they reach point B (N, N) in the bottom right corner.On the way he walks, he can take the number in the square (which becomes the number 0).
+This person walked from point A to point B twice, trying to find 2 such paths, so that the sum of the obtained numbers is the maximum.
 
-### Input Format
+### 输入输出
 
-The first line is an integer N (representing the N×N grid). Each subsequent line contains three integers: the first two represent a position, and the third is the number placed at that position. A line containing only 0 indicates the end of input.
+* * Input format * *: The first line of input is an integer N (representing the grid diagram of N × N), and each subsequent line has three integers, the first two represent the position, and the third number is the number placed on the position. A separate line of 0 indicates the end of the input.
 
-### Output Format
+* * Output format * *: Just output an integer representing the maximum sum obtained on the 2 paths.
 
-Output a single integer representing the maximum sum obtainable from the 2 paths.
+### 样例
 
-### Sample Input/Output
+Input:
+__ code_block_0 __
 
-**Input:**
-```
-8
-2 3 13
-2 6 6
-3 5 7
-4 4 14
-5 2 21
-5 6 4
-6 3 15
-7 2 14
-0 0 0
-```
+Output:
+__ code_block_1 __
 
-**Output:**
-```
-67
-```
+### 约束条件
+- 数据范围：1≤N≤9
 
-### Constraints
+### 问题分析
 
-Data range: 1≤N≤9.
+Why can't I enumerate twice (i.e. find an optimal path first, then find the second one in the remaining cells)? Because one path changes the map (takes the number) and affects the result of the second, the two paths must be considered in conjunction and cannot be optimized independently.
 
----
+## 思路分析
 
-## Solution Approach
+The ideas for the three solutions are as follows:
 
-Initially, I attempted to enumerate one path and then enumerate again with the modified grid (simulating number collection). However, this approach proved overly complex. Eventually, I consulted Claude, which provided a DP solution (detailed below). I also came up with a DFS with pruning approach (inspired by a similar maze problem from earlier). Later, Claude suggested a more general solution using cost flow (highly advanced, beyond typical scope; outlined briefly below).
+### 解法一：动态规划
 
-**Note:** Why can't we use two separate enumerations? Because one path modifies the grid, affecting the second path. The two paths must be considered together.
+* * Core idea * *: Advance both paths simultaneously, simulating two people walking at the same time with one DP.
 
----
+* * State design * *: set `dp [k] [x1] [x2]`, where:
+- k is the number of steps currently taken (i.e. the value of x + y, from 2 to 2N)
+- x1 and x2 are the line numbers where the two people are currently located
+- y = k - x can be derived from k and x (key optimization, this step reduces the dimension), so column numbers do not need to be stored separately
 
-## Solution 1: Dynamic Programming
+* * Deduplication * *: When two people are in the same cell (x1 = = x2, y1 = = y2), the cell is taken only once.
 
-**Core Idea:** Advance both paths simultaneously and use a single DP to simulate two people walking at the same time.
+* * State transition * *: Two people each can choose to move to the right or down for a total of 4 combinations. Each state dp [k] [x1] [x2] represents the sum of the maximum values at line x1 and line x2 for human 1 and 2, respectively, going to step k.
 
-**State Design:** Let dp[k][x1][x2], where:
-- k = current number of steps taken (i.e., x + y, ranging from 2 to 2N)
-- x1, x2 = row numbers of the two people
+### 解法二：DFS + 记忆化搜索
 
-From k and x, we can derive y = k - x (key insight that reduces dimensions), so column numbers don't need separate storage.
+* * Core idea * *: Similar to the DP algorithm (deep search and DP are essentially one thing after all), but adds memorized search to avoid double counting. If there is no memorized search, the amount of calculation will be an exponential explosion, about $4 ^ {16} $ times at N = 9.
 
-**Deduplication:** When both people occupy the same cell (x1 == x2, thus y1 == y2), that cell is only collected once.
+* * Implementation * *: Starting from the initial state, all possible transitions are attempted recursively, while the calculated state is cached with the memo array, avoiding duplication. Returns 0 when the end point is reached and returns the maximum value layer by layer.
 
-**Transitions:** Each person can choose to move right or down, giving 4 combinations total.
+### 解法三：费用流（最小费用最大流）
 
-**Time Complexity:** O(N³)
+* * Core Idea * *: Convert "maximize two paths" into a network flow problem.
 
-**Complete Code:**
-```c
-#include <stdio.h>
+* * Modeling ideas * *:
+- Two paths from A to B = 2 flows from the source to the sink
+- Fetch up to once per cell = Capacity limit per node
+- Get number max = cost max (min to min)
 
-int N;
-int map[10][10];
-int dp[20][10][10]; // dp[steps][person1_row][person2_row]
+* * Split point processing * *: Each grid (i, j) is split into two nodes in and out:
+- in → out capacity 1, cost - map [i] [j] (first path taken)
+- in → out plus capacity 1, cost 0 (second path through but not counted)
 
-int main() {
-    scanf("%d", &N);
+* * Connecting edges * *: (i, j) out connects (i +1, j) in and (i, j +1) in, capacity 2, cost 0.
 
-    int x, y, v;
-    while (scanf("%d %d %d", &x, &y, &v) && (x || y || v))
-        map[x][y] = v;
+## 代码实现
 
-    // Initialize with -1 to mark unreachable states
-    for (int k = 0; k < 20; k++)
-        for (int i = 0; i < 10; i++)
-            for (int j = 0; j < 10; j++)
-                dp[k][i][j] = -1;
+### 解法一：动态规划
 
-    dp[2][1][1] = map[1][1];
+Full Code
+__ code_block_2 __
 
-    // ========== DP Main Loop ==========
-    for (int k = 2; k < 2 * N; k++) {
-        for (int x1 = 1; x1 <= N; x1++) {
-            int y1 = k - x1;
-            if (y1 < 1 || y1 > N) continue;
+### 解法二：DFS + 记忆化搜索
 
-            for (int x2 = x1; x2 <= N; x2++) {
-                int y2 = k - x2;
-                if (y2 < 1 || y2 > N) continue;
-                if (dp[k][x1][x2] < 0) continue;
+__ code_block_3 __
 
-                // Try all 4 movement combinations
-                for (int m1 = 0; m1 <= 1; m1++) {
-                    for (int m2 = 0; m2 <= 1; m2++) {
-                        int nx1 = x1 + m1,     ny1 = y1 + (1 - m1);
-                        int nx2 = x2 + m2,     ny2 = y2 + (1 - m2);
+### 解法三：费用流（最小费用最大流）
 
-                        if (nx1 > N || ny1 > N) continue;
-                        if (nx2 > N || ny2 > N) continue;
+__ code_block_4 __
 
-                        // Calculate gain from current step
-                        int gain = map[nx1][ny1];
-                        if (nx1 != nx2) gain += map[nx2][ny2];
+## 时间复杂度与优缺点
 
-                        // Normalize: ensure a <= b
-                        int a = nx1, b = nx2;
-                        if (a > b) { int t = a; a = b; b = t; }
+### 解法一：动态规划
 
-                        int newval = dp[k][x1][x2] + gain;
-                        if (newval > dp[k + 1][a][b])
-                            dp[k + 1][a][b] = newval;
-                    }
-                }
-            }
-        }
-    }
+* * Time complexity * *: $ O (N ^ 3) $  
+- Number of states: $ O (N ^ 2)\ times O (N ^ 2)/2 = O (N ^ 4) $, but due to the constraints of dimensionality reduction and x1 and x2, it is actually $ O (N ^ 3) $
+- 4 transitions per state
 
-    printf("%d\n", dp[2 * N][N][N]);
-    return 0;
-}
-```
+* * Space complexity * *: $ O (N ^ 3) $  
+- dp array size is $2N\ times N\ times N $
 
----
+* * Benefits * *:
+- Clear ✅ thinking and easy to understand
+- Problem solving in ✅ one iteration
+- ✅ The code is relatively simple
 
-## Solution 2: DFS with Memoization
+* * Cons * *:
+- Large ❌ footprint (approx. 1.3MB at N = 9)
 
-**Core Idea:** Similar to DP (DFS and DP are essentially equivalent), but with memoized search to avoid redundant computations. Without memoization, the computation would explode exponentially—approximately 4^16 operations for N=9.
+### 解法二：DFS + 记忆化搜索
 
-**Time Complexity:** O(N³)
+* * Time complexity * *: $ O (N ^ 3) $  
+- Same number of statuses as DP
+- Up to one calculation per state (memorization)
 
-**Complete Code:**
-```c
-#include <stdio.h>
-#include <string.h>
+* * Space complexity * *: $ O (N ^ 3) $  
+- Memo and visited arrays account for $ O (N ^ 3) $ each
 
-// ========== DFS with Memoization ==========
+* * Benefits * *:
+- ✅ Logical and natural, thinking from top to bottom
+- ✅ Easy to add pruning (although there are not many pruning in this question)
+- ✅ Flexible state definition
 
-int N;
-int map[10][10];
-int memo[20][10][10];    // Memoization array
-int visited[20][10][10]; // Visited flag
+* * Cons * *:
+- The ❌ recursive call stack depth is $ O (N) $ (stack space)
+- Same ❌ space complexity as DP
 
-int dfs(int k, int x1, int x2) {
-    if (x1 == N && x2 == N) return 0;
+### 解法三：费用流
 
-    if (visited[k][x1][x2]) return memo[k][x1][x2];
-    visited[k][x1][x2] = 1;
+* * Time complexity * *: $ O (Flow\ times SPFA) = O (2\ times E\ log V) = O (N ^ 2\ times N ^ 2) = O (N ^ 4) $  
+- Flow is 2
+- SPFA $ O (V\ log V) $ each time, where $ V = O (N ^ 2) $, $ E = O (N ^ 2) $
 
-    int y1 = k - x1;
-    int y2 = k - x2;
-    int best = -1;
+* * Space complexity * *: $ O (V + E) = O (N ^ 2) $  
+- Storage space for diagrams
 
-    for (int m1 = 0; m1 <= 1; m1++) {
-        for (int m2 = 0; m2 <= 1; m2++) {
-            int nx1 = x1 + m1,  ny1 = y1 + (1 - m1);
-            int nx2 = x2 + m2,  ny2 = y2 + (1 - m2);
+* * Benefits * *:
+- ✅ Suitable for more general scenarios (multiple paths, restricted diagrams, etc.)
+- ✅ Code frameworks can be reused for other expense stream issues
+- Relatively sparsely occupied ✅ space
 
-            if (nx1 > N || ny1 > N) continue;
-            if (nx2 > N || ny2 > N) continue;
+* * Cons * *:
+- Highest ❌ time complexity (about $ O (N ^ 4) $ vs $ O (N ^ 3) $)
+- ❌ The code is long, complex and error-prone
+- ❌ Difficulty has skyrocketed beyond the limits of the competition
 
-            int a = nx1, b = nx2;
-            if (a > b) { int t = a; a = b; b = t; }
+### 对比与总结
 
-            int sub = dfs(k + 1, a, b);
-            if (sub < 0) continue;
+| Features | Solution 1 DP | Solution 2 DFS | Solution 3 Cost Flow |
+|------|----------|----------|----------|
+| Ease of Understanding | ★★★★☆ | ★★★★☆ | ★☆☆☆☆ |
+| Difficulty | ★★☆☆☆ | ★★☆☆☆ | ★★★★★ |
+| Time Complexity | $ O (N ^ 3) $ | $ O (N ^ 3) $ | $ O (N ^ 4) $ |
+| Space Complexity | $ O (N ^ 3) $ | $ O (N ^ 3) $ | $ O (N ^ 2) $ |
+| Recommendation Index | ★★★★★ | ★★★★☆ | ★★☆☆☆ |
 
-            int gain = map[nx1][ny1];
-            if (nx1 != nx2) gain += map[nx2][ny2];
-
-            if (gain + sub > best) best = gain + sub;
-        }
-    }
-
-    memo[k][x1][x2] = best;
-    return best;
-}
-
-int main() {
-    scanf("%d", &N);
-
-    int x, y, v;
-    while (scanf("%d %d %d", &x, &y, &v) && (x || y || v))
-        map[x][y] = v;
-
-    memset(visited, 0, sizeof(visited));
-
-    int start_val = map[1][1];
-    int result = dfs(2, 1, 1);
-
-    printf("%d\n", result >= 0 ? start_val + result : 0);
-    return 0;
-}
-```
-
----
-
-## Solution 3: Minimum Cost Maximum Flow
-
-**Core Idea:** Transform "two paths collecting maximum value" into a network flow problem.
-
-### Modeling Approach
-
-**Key Observation:**
-- Two paths from A to B = flow of 2 from source to sink
-- Each cell collectible at most once = node capacity of 1
-- Maximize collected value = minimize negative cost flow
-
-**Node Splitting:** Each cell (i,j) is split into two nodes in and out:
-- in → out: capacity 1, cost -map[i][j] (negative because we minimize)
-- in → out: additional capacity 1, cost 0 (second path passes without collecting)
-- Combined: capacity 2, but only first unit has profit
-
-**Edge Construction:** out node of (i,j) connects to in nodes of (i+1,j) and (i,j+1), both with capacity 2 and cost 0.
-
-**Source and Sink:** Source S connects to (1,1)_in, (N,N)_out connects to sink T, both with flow 2.
-
-**Complete Code (MCMF with SPFA):**
-```c
-#include <stdio.h>
-#include <string.h>
-
-#define MAXN 1000
-#define MAXE 10000
-#define INF  0x3f3f3f3f
-
-// ========== Adjacency List Data Structure ==========
-
-int head[MAXN], nxt[MAXE], to[MAXE], cap[MAXE], cost[MAXE], tot;
-
-void init() {
-    memset(head, -1, sizeof(head));
-    tot = 0;
-}
-
-void add_edge(int u, int v, int c, int w) {
-    to[tot] = v; cap[tot] = c; cost[tot] = w; nxt[tot] = head[u]; head[u] = tot++;
-    to[tot] = u; cap[tot] = 0; cost[tot] = -w; nxt[tot] = head[v]; head[v] = tot++;
-}
-
-int dist[MAXN], in_queue[MAXN], prevv[MAXN], preve[MAXN];
-int queue[MAXN * 100];
-
-// ========== SPFA Algorithm ==========
-
-int spfa(int s, int t, int n) {
-    memset(dist, 0x3f, sizeof(int) * (n + 1));
-    memset(in_queue, 0, sizeof(int) * (n + 1));
-    dist[s] = 0;
-
-    int front = 0, rear = 0;
-    queue[rear++] = s;
-    in_queue[s] = 1;
-
-    // SPFA Main Loop
-    while (front != rear) {
-        int u = queue[front++];
-        in_queue[u] = 0;
-
-        // Relaxation
-        for (int e = head[u]; e != -1; e = nxt[e]) {
-            if (cap[e] > 0 && dist[to[e]] > dist[u] + cost[e]) {
-                dist[to[e]] = dist[u] + cost[e];
-                prevv[to[e]] = u;
-                preve[to[e]] = e;
-
-                if (!in_queue[to[e]]) {
-                    queue[rear++] = to[e];
-                    in_queue[to[e]] = 1;
-                }
-            }
-        }
-    }
-
-    return dist[t] < INF;
-}
-
-// ========== MCMF ==========
-
-int mcmf(int s, int t, int n) {
-    int total_cost = 0;
-
-    while (spfa(s, t, n)) {
-        int flow = INF;
-        for (int v = t; v != s; v = prevv[v])
-            if (cap[preve[v]] < flow) flow = cap[preve[v]];
-
-        for (int v = t; v != s; v = prevv[v]) {
-            cap[preve[v]] -= flow;
-            cap[preve[v] ^ 1] += flow;
-        }
-
-        total_cost += dist[t] * flow;
-    }
-
-    return total_cost;
-}
-
-int main() {
-    int N;
-    scanf("%d", &N);
-
-    int map[10][10] = {0};
-    int x, y, v;
-    while (scanf("%d %d %d", &x, &y, &v) && (x || y || v))
-        map[x][y] = v;
-
-    init();
-
-    int S = 2 * N * N + 1;
-    int T = 2 * N * N + 2;
-    int total_nodes = T;
-
-    #define IN(i,j)  ((i-1)*N+(j))
-    #define OUT(i,j) (N*N+(i-1)*N+(j))
-
-    for (int i = 1; i <= N; i++) {
-        for (int j = 1; j <= N; j++) {
-            if (map[i][j] > 0) {
-                add_edge(IN(i,j), OUT(i,j), 1, -map[i][j]);
-                add_edge(IN(i,j), OUT(i,j), 1, 0);
-            } else {
-                add_edge(IN(i,j), OUT(i,j), 2, 0);
-            }
-
-            if (j + 1 <= N) add_edge(OUT(i,j), IN(i,j+1), 2, 0);
-            if (i + 1 <= N) add_edge(OUT(i,j), IN(i+1,j), 2, 0);
-        }
-    }
-
-    add_edge(S, IN(1,1), 2, 0);
-    add_edge(OUT(N,N), T, 2, 0);
-
-    int ans = -mcmf(S, T, total_nodes);
-    printf("%d\n", ans);
-    return 0;
-}
-```
-
-**Advantage:** Easily extensible to K paths.
+* * Conclusion * *: For this question, * * Solution 1 (DP) * * is the best choice, which is clear, efficient and not overly complicated. Solution 2 is for students who want to practice DFS. Solution 3 Although elegant, it is not as efficient as DP for the scale of N ≤ 9, and only extends knowledge.
 
 

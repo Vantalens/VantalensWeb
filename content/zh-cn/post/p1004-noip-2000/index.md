@@ -1,6 +1,8 @@
 ---
 tags:
-    - 算法
+    - 动态规划
+    - DFS
+    - 费用流
 categories:
     - 算法
 pinned: false
@@ -8,7 +10,7 @@ title: "P1004 [NOIP 2000 提高组] 方格取数 分析与总结"
 description: "经典棋盘模型问题的多种解法分析：动态规划、DFS 记忆化和费用流"
 date: 2026-02-28T11:31:00+08:00
 image: ""
-math: false
+math: true
 license: ""
 hidden: false
 comments: true
