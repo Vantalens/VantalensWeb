@@ -13,9 +13,7 @@
 <time class=article-time--published datetime=2026-03-02T13:57:00+08:00>Mar 02, 2026</time></div><div class=article-views><svg class="icon icon-tabler icon-tabler-eye" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 104 0 2 2 0 00-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6s-6.6-2-9-6c2.4-4 5.4-6 9-6s6.6 2 9 6"/></svg>
 <span class=umami-views data-umami-page-pv><span class=umami-value>0</span> 次阅读</span></div></footer><footer class=article-translations><svg class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h7"/><path d="M9 3v2c0 4.418-2.239 8-5 8"/><path d="M5 9c-.003 2.144 2.952 3.908 6.7 4"/><path d="M12 20l4-9 4 9"/><path d="M19.1 18h-6.2"/></svg><div><a href=https://w2343419-del.github.io/WangScape/en/p/state-transition-equation-with-dynamic-programming/ class=link>English</a></div></footer></div></header><section class=article-content><p>在算法题当中，我们经常可以看见动态规划的影子，所以在此总结一下动态规划（DP）和其中非常重要的一个部分——状态转移方程。</p><h2 id=一何为动态规划>一、何为动态规划</h2><p>动态规划（Dynamic Programming，DP）是一种通过把原问题分解为子问题来求解的算法思想。</p><p>动态规划不是某种具体的数据结构，而是一种思维方式。</p><p>DP 需要满足以下两个性质：</p><h3 id=1-最优子结构>1. 最优子结构</h3><p>原问题的最优解包含子问题的最优解。</p><h3 id=2-重叠子问题>2. 重叠子问题</h3><p>子问题被反复计算，可以缓存避免重复。</p><h2 id=二何为状态转移方程>二、何为状态转移方程</h2><p>要了解状态转移方程，首先应当知道何为"状态"。</p><h3 id=1-状态>1. &ldquo;状态&rdquo;</h3><p>状态是对问题在某一阶段的描述，通常用 <code>dp[i]</code> 或 <code>dp[i][j]</code> 表示。</p><p>例如：</p><ul><li><code>dp[i]</code> = 前 i 个元素的最优解</li><li><code>dp[i][j]</code> = 从位置 i 到位置 j 的最优解</li><li><code>dp[i][w]</code> = 考虑前 i 个物品、剩余容量为 w 时的最优解</li></ul><h3 id=2-状态转移方程>2. 状态转移方程</h3><p>状态转移方程可以粗略的写成：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>新状态 = f(旧状态)
-</span></span></code></pre></td></tr></table></div></div><p>状态转移方程所做的是确定该步有什么选择，以及选择背后所对应的子问题（可以理解为递推式）。</p><h2 id=三典型例题>三、典型例题</h2><h3 id=1-线性-dp爬楼梯>1. 线性 DP：爬楼梯</h3><p><strong>问题：</strong> 每次可以爬 1 或 2 个台阶，爬到第 n 阶有多少种方法？</p><p><strong>思路分析：</strong></p><ol><li>定义状态：<code>dp[i]</code> = 爬到第 i 阶的方法数</li><li>最后一步分析：到达第 i 阶，只能从第 i-1 阶（迈 1 步）或第 i-2 阶（迈 2 步）过来</li><li>根据分析，我们可以得到这样一个状态转移方程：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>dp[i] = dp[i-1] + dp[i-2]
-</span></span></code></pre></td></tr></table></div></div><p>注意：此状态转移方程还有两个边界状态：<code>dp[1] = 1</code>，<code>dp[2] = 2</code></p><ol start=4><li>图解：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></span></code></pre></td></tr></table></div></div><p>状态转移方程所做的是确定该步有什么选择，以及选择背后所对应的子问题（可以理解为递推式）。</p><h2 id=三典型例题>三、典型例题</h2><h2 id=三典型例题-1>三、典型例题</h2><h3 id=例-1线性-dp---爬楼梯>例 1：线性 DP - 爬楼梯</h3><h4 id=问题>问题</h4><p>每次可以爬 1 或 2 个台阶，爬到第 n 阶有多少种方法？</p><h4 id=思路分析>思路分析</h4><ol><li>定义状态：<code>dp[i]</code> = 爬到第 i 阶的方法数</li><li>最后一步分析：到达第 i 阶，只能从第 i-1 阶（迈 1 步）或第 i-2 阶（迈 2 步）过来</li><li>根据分析，我们可以得到这样一个状态转移方程：</li></ol>$$dp[i] = dp[i-1] + dp[i-2]$$<p>注意：此状态转移方程还有两个边界状态：<code>dp[1] = 1</code>，<code>dp[2] = 2</code></p><ol start=4><li>图解：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -27,7 +25,7 @@
 </span></span><span class=line><span class=cl>dp[3] = 3
 </span></span><span class=line><span class=cl>dp[4] = 5
 </span></span><span class=line><span class=cl>dp[5] = 8
-</span></span></code></pre></td></tr></table></div></div><ol start=5><li>代码实现（以爬 5 层为例）：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></span></code></pre></td></tr></table></div></div><h4 id=代码实现>代码实现</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -61,9 +59,7 @@
 </span></span><span class=line><span class=cl>    <span class=nf>printf</span><span class=p>(</span><span class=s>&#34;爬 5 阶楼梯的方法数: %d</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span> <span class=nf>climbStairs</span><span class=p>(</span><span class=mi>5</span><span class=p>));</span>  <span class=c1>// 输出: 8
 </span></span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
 </span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span></code></pre></td></tr></table></div></div><h3 id=2-线性-dp打家劫舍>2. 线性 DP：打家劫舍</h3><p><strong>问题：</strong> 一排房子不能抢相邻的，求最大金额。</p><p><strong>思路分析：</strong></p><ol><li>定义状态：<code>dp[i]</code> = 抢到第 i 间房能获得的最大金额</li><li>最后一步分析：第 i 间房，要么抢，要么不抢</li><li>根据分析，我们可以得到这样一个状态转移方程：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>dp[i] = max(dp[i-1], dp[i-2] + nums[i])
-</span></span></code></pre></td></tr></table></div></div><ol start=4><li>图解：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></span></code></pre></td></tr></table></div></div><h4 id=时间复杂度与优缺点>时间复杂度与优缺点</h4><p><strong>时间复杂度</strong> ：$O(n)$<br><strong>空间复杂度</strong> ：$O(n)$</p><p><strong>优点</strong> ：</p><ul><li>✅ 问题简单，易于理解</li><li>✅ 状态定义直观</li></ul><p><strong>缺点</strong> ：</p><ul><li>❌ 只能计算一固定地方的值，若要计算多次则需多次递推</li></ul><hr><h3 id=例-2线性-dp---打家劫舍>例 2：线性 DP - 打家劫舍</h3><h4 id=问题-1>问题</h4><p>一排房子不能抢相邻的，求最大金额。给定数组 <code>nums</code> 表示各房子的金额。</p><h4 id=思路分析-1>思路分析</h4><ol><li>定义状态：<code>dp[i]</code> = 抢到第 i 间房能获得的最大金额</li><li>最后一步分析：第 i 间房，要么抢，要么不抢<ul><li>抢这间：得到 <code>nums[i] + dp[i-2]</code>（前面最多抢到 i-2 间）</li><li>不抢这间：得到 <code>dp[i-1]</code>（抢到 i-1 间的最大值）</li></ul></li><li>状态转移方程：</li></ol>$$dp[i] = \max(dp[i-1], dp[i-2] + nums[i])$$<ol start=4><li>图解：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -75,7 +71,7 @@
 </span></span><span class=line><span class=cl>dp[2] = max(7, 2+9) = 11
 </span></span><span class=line><span class=cl>dp[3] = max(11, 7+3) = 11
 </span></span><span class=line><span class=cl>dp[4] = max(11, 11+1) = 12  (抢第 0、2、4 间：2+9+1=12)
-</span></span></code></pre></td></tr></table></div></div><ol start=5><li>代码实现：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></span></code></pre></td></tr></table></div></div><h4 id=代码实现-1>代码实现</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -117,15 +113,7 @@
 </span></span><span class=line><span class=cl>    <span class=nf>printf</span><span class=p>(</span><span class=s>&#34;最大金额: %d</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span> <span class=nf>rob</span><span class=p>(</span><span class=n>nums</span><span class=p>,</span> <span class=n>n</span><span class=p>));</span>  <span class=c1>// 输出: 12
 </span></span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
 </span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span></code></pre></td></tr></table></div></div><h3 id=3-背包-dp01-背包>3. 背包 DP：0/1 背包</h3><p><strong>问题：</strong> n 个物品，重量 <code>w[]</code>，价值 <code>v[]</code>，背包容量 W，求最大价值。</p><p><strong>思路分析：</strong></p><ol><li>定义状态：<code>dp[i][j]</code> = 考虑前 i 个物品、容量为 j 时的最大价值</li><li>最后一步分析：第 i 个物品，放或不放</li><li>根据分析，我们可以得到这样一个状态转移方程：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>不放：dp[i][j] = dp[i-1][j]
-</span></span><span class=line><span class=cl>放：  dp[i][j] = dp[i-1][j - w[i]] + v[i]   （需 j &gt;= w[i]）
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>→ dp[i][j] = max(dp[i-1][j], dp[i-1][j - w[i]] + v[i])
-</span></span></code></pre></td></tr></table></div></div><ol start=4><li>图解：</li></ol><p>物品：(w=2, v=3)、(w=3, v=4)、(w=4, v=5) 背包容量 W=5</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></span></code></pre></td></tr></table></div></div><h4 id=时间复杂度与优缺点-1>时间复杂度与优缺点</h4><p><strong>时间复杂度</strong> ：$O(n)$<br><strong>空间复杂度</strong> ：$O(n)$，可优化为 $O(1)$（仅保留前两项）</p><p><strong>优点</strong> ：</p><ul><li>✅ 与爬楼梯类似，思路清晰</li><li>✅ 可优化空间至 O(1)</li></ul><p><strong>缺点</strong> ：</p><ul><li>❌ 不能直接回溯具体哪些房子被抢</li></ul><hr><h3 id=例-3背包-dp---01-背包>例 3：背包 DP - 0/1 背包</h3><h4 id=问题-2>问题</h4><p>n 个物品，重量 <code>w[]</code>，价值 <code>v[]</code>，背包容量 W，求最大价值。</p><h4 id=思路分析-2>思路分析</h4><ol><li>定义状态：<code>dp[i][j]</code> = 考虑前 i 个物品、容量为 j 时的最大价值</li><li>最后一步分析：第 i 个物品，放或不放<ul><li>不放：<code>dp[i][j] = dp[i-1][j]</code></li><li>放：<code>dp[i][j] = dp[i-1][j - w[i]] + v[i]</code>（需 $j \geq w[i]$）</li></ul></li><li>状态转移方程：</li></ol>$$dp[i][j] = \max(dp[i-1][j], dp[i-1][j - w[i]] + v[i])$$<ol start=4><li>图解：</li></ol><p>物品：(w=2, v=3)、(w=3, v=4)、(w=4, v=5) 背包容量 W=5</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -139,7 +127,7 @@
 </span></span><span class=line><span class=cl>i=3    0    0    3    4    5    7
 </span></span><span class=line><span class=cl>
 </span></span><span class=line><span class=cl>答案：dp[3][5] = 7
-</span></span></code></pre></td></tr></table></div></div><ol start=5><li>代码实现：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></span></code></pre></td></tr></table></div></div><h4 id=代码实现-2>代码实现</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -203,17 +191,16 @@
 </span></span><span class=line><span class=cl>    <span class=nf>printf</span><span class=p>(</span><span class=s>&#34;最大价值: %d</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span> <span class=nf>knapsack</span><span class=p>(</span><span class=n>w</span><span class=p>,</span> <span class=n>v</span><span class=p>,</span> <span class=n>n</span><span class=p>,</span> <span class=n>W</span><span class=p>));</span>  <span class=c1>// 输出: 7
 </span></span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
 </span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span></code></pre></td></tr></table></div></div><ol start=6><li>空间优化</li></ol><p>二维 dp 可以压缩成一维，内层循环<strong>必须倒序</strong>，防止同一件物品被重复放入：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></span></code></pre></td></tr></table></div></div><p><strong>空间优化</strong> ：二维 dp 可以压缩成一维，内层循环<strong>必须倒序</strong>，防止同一件物品被重复放入：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=line><span class=cl><span class=k>for</span> <span class=p>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>n</span><span class=p>;</span> <span class=n>i</span><span class=o>++</span><span class=p>)</span>
 </span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=kt>int</span> <span class=n>j</span> <span class=o>=</span> <span class=n>W</span><span class=p>;</span> <span class=n>j</span> <span class=o>&gt;=</span> <span class=n>w</span><span class=p>[</span><span class=n>i</span><span class=p>];</span> <span class=n>j</span><span class=o>--</span><span class=p>)</span>        <span class=c1>// 倒序！
 </span></span></span><span class=line><span class=cl>        <span class=n>dp</span><span class=p>[</span><span class=n>j</span><span class=p>]</span> <span class=o>=</span> <span class=nf>max</span><span class=p>(</span><span class=n>dp</span><span class=p>[</span><span class=n>j</span><span class=p>],</span> <span class=n>dp</span><span class=p>[</span><span class=n>j</span> <span class=o>-</span> <span class=n>w</span><span class=p>[</span><span class=n>i</span><span class=p>]]</span> <span class=o>+</span> <span class=n>v</span><span class=p>[</span><span class=n>i</span><span class=p>]);</span>
-</span></span></code></pre></td></tr></table></div></div><h3 id=4-序列-dp最长公共子序列lcs>4. 序列 DP：最长公共子序列（LCS）</h3><p><strong>问题：</strong> 两个字符串，求最长公共子序列的长度。例：<code>"abcde"</code> 和 <code>"ace"</code> → 长度为 3（<code>ace</code>）</p><p><strong>思路分析：</strong></p><ol><li>定义状态：<code>dp[i][j]</code> = s1 前 i 个字符与 s2 前 j 个字符的 LCS 长度</li><li>最后一步分析与状态转移方程判断：s1[i] 和 s2[j] 是否相等：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>相等：  dp[i][j] = dp[i-1][j-1] + 1
-</span></span><span class=line><span class=cl>不相等：dp[i][j] = max(dp[i-1][j], dp[i][j-1])
-</span></span></code></pre></td></tr></table></div></div><ol start=3><li>图解：</li></ol><p>s1 = &ldquo;abcde&rdquo; s2 = &ldquo;ace&rdquo;</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></span></code></pre></td></tr></table></div></div><h4 id=时间复杂度与优缺点-2>时间复杂度与优缺点</h4><p><strong>时间复杂度</strong> ：$O(nW)$<br><strong>空间复杂度</strong> ：$O(nW)$，优化后为 $O(W)$</p><p><strong>优点</strong> ：</p><ul><li>✅ DP 框架经典，易于扩展</li><li>✅ 可一次性解决所有容量的最优值</li></ul><p><strong>缺点</strong> ：</p><ul><li>❌ 物品数量或容量很大时，时间空间压力大</li></ul><hr><h3 id=例-4序列-dp---最长公共子序列lcs>例 4：序列 DP - 最长公共子序列（LCS）</h3><h4 id=问题-3>问题</h4><p>两个字符串，求最长公共子序列的长度。例：<code>"abcde"</code> 和 <code>"ace"</code> → 长度为 3（<code>ace</code>）</p><h4 id=思路分析-3>思路分析</h4><ol><li><p>定义状态：<code>dp[i][j]</code> = s1 前 i 个字符与 s2 前 j 个字符的 LCS 长度</p></li><li><p>最后一步分析：s1[i] 和 s2[j] 是否相等：</p><ul><li>相等：<code>dp[i][j] = dp[i-1][j-1] + 1</code></li><li>不相等：<code>dp[i][j] = max(dp[i-1][j], dp[i][j-1])</code>（去掉 s1[i] 或 s2[j]，看哪个更优）</li></ul></li><li><p>状态转移方程：</p></li></ol>$$dp[i][j] = \begin{cases}
+dp[i-1][j-1] + 1 & \text{if } s1[i-1] = s2[j-1] \\
+\max(dp[i-1][j], dp[i][j-1]) & \text{otherwise}
+\end{cases}$$<ol start=4><li>图解：</li></ol><p>s1 = &ldquo;abcde&rdquo; s2 = &ldquo;ace&rdquo;</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -227,7 +214,7 @@
 </span></span><span class=line><span class=cl>    c    0   1    2    2
 </span></span><span class=line><span class=cl>    d    0   1    2    2
 </span></span><span class=line><span class=cl>    e    0   1    2    3   ← 得解
-</span></span></code></pre></td></tr></table></div></div><ol start=4><li>代码实现：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></span></code></pre></td></tr></table></div></div><h4 id=代码实现-3>代码实现</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -293,9 +280,7 @@
 </span></span><span class=line><span class=cl>    <span class=nf>printf</span><span class=p>(</span><span class=s>&#34;LCS 长度: %d</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span> <span class=nf>lcs</span><span class=p>(</span><span class=n>s1</span><span class=p>,</span> <span class=n>s2</span><span class=p>));</span>  <span class=c1>// 输出: 3
 </span></span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
 </span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span></code></pre></td></tr></table></div></div><h3 id=5-区间-dp戳气球>5. 区间 DP：戳气球</h3><p><strong>问题：</strong> 戳破气球 i 得分 = <code>nums[i-1] * nums[i] * nums[i+1]</code>，求最大总得分。</p><p><strong>思路分析：</strong></p><ol><li>关键思路：不想"先戳哪个"，而想"区间 (i,j) 中<strong>最后一个</strong>戳哪个"，这样两侧边界已知，避免状态混乱</li><li>定义状态：<code>dp[i][j]</code> = 戳破开区间 (i,j) 内所有气球的最大得分</li><li>根据分析，我们可以得到这样一个状态转移方程：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>dp[i][j] = max(dp[i][k] + dp[k][j] + nums[i] * nums[k] * nums[j])
-</span></span></code></pre></td></tr></table></div></div><p>其中 k 是区间 (i,j) 中最后一个被戳的气球。</p><ol start=4><li>代码实现：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></span></code></pre></td></tr></table></div></div><h4 id=时间复杂度与优缺点-3>时间复杂度与优缺点</h4><p><strong>时间复杂度</strong> ：$O(mn)$<br><strong>空间复杂度</strong> ：$O(mn)$，可优化为 $O(\min(m,n))$（滚动数组）</p><p><strong>优点</strong> ：</p><ul><li>✅ 框架适用于序列对齐问题</li><li>✅ 可扩展到 LCS 具体字符（回溯）</li></ul><p><strong>缺点</strong> ：</p><ul><li>❌ m、n 都很大时空间压力大</li></ul><hr><h3 id=例-5区间-dp---戳气球>例 5：区间 DP - 戳气球</h3><h4 id=问题-4>问题</h4><p>戳破气球 i 得分 = <code>nums[i-1] * nums[i] * nums[i+1]</code>，求最大总得分。</p><h4 id=思路分析-4>思路分析</h4><ol><li><p><strong>关键思路</strong> ：不想"先戳哪个"，而想"区间 (i,j) 中<strong>最后一个</strong>戳哪个"，这样两侧边界已知，避免状态混乱</p></li><li><p>定义状态：<code>dp[i][j]</code> = 戳破开区间 (i,j) 内所有气球的最大得分</p></li><li><p>根据分析，我们可以得到这样一个状态转移方程：</p></li></ol>$$dp[i][j] = \max_{i < k < j}(dp[i][k] + dp[k][j] + nums[i] \times nums[k] \times nums[j])$$<p>其中 k 是区间 (i,j) 中最后一个被戳的气球。</p><h4 id=代码实现-4>代码实现</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -373,27 +358,7 @@
 </span></span><span class=line><span class=cl>    <span class=nf>printf</span><span class=p>(</span><span class=s>&#34;最大得分: %d</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span> <span class=nf>maxCoins</span><span class=p>(</span><span class=n>arr</span><span class=p>,</span> <span class=n>n</span><span class=p>));</span>  <span class=c1>// 输出: 167
 </span></span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
 </span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span></code></pre></td></tr></table></div></div><h2 id=四模型总结>四、模型总结</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌─────────────┬────────────────────────────────┬──────────────┐
-</span></span><span class=line><span class=cl>│   类型      │       状态转移方程              │  时间复杂度  │
-</span></span><span class=line><span class=cl>├─────────────┼────────────────────────────────┼──────────────┤
-</span></span><span class=line><span class=cl>│ 线性 DP     │ dp[i] = f(dp[i-1], dp[i-2])   │   O(n)       │
-</span></span><span class=line><span class=cl>│ 背包 DP     │ dp[i][j] = max(不放, 放)       │   O(nW)      │
-</span></span><span class=line><span class=cl>│ 序列 DP     │ dp[i][j] = f(dp[i-1][j-1],..) │   O(mn)      │
-</span></span><span class=line><span class=cl>│ (LCS)       │                                │              │
-</span></span><span class=line><span class=cl>│ 区间 DP     │ dp[i][j] = max(dp[i][k] +     │   O(n³)      │
-</span></span><span class=line><span class=cl>│             │           dp[k][j])           │              │
-</span></span><span class=line><span class=cl>└─────────────┴────────────────────────────────┴──────────────┘
-</span></span></code></pre></td></tr></table></div></div></section><footer class=article-footer><section class=article-tags><a href=/WangScape/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/>动态规划</a>
+</span></span></code></pre></td></tr></table></div></div><h4 id=时间复杂度与优缺点-4>时间复杂度与优缺点</h4><p><strong>时间复杂度</strong> ：$O(n^3)$<br><strong>空间复杂度</strong> ：$O(n^2)$</p><p><strong>优点</strong> ：</p><ul><li>✅ 区间 DP 的经典例题</li><li>✅ &ldquo;最后一个"的思路极具启发性</li><li>✅ 可通过回溯得到具体戳的顺序</li></ul><p><strong>缺点</strong> ：</p><ul><li>❌ 思路相对复杂，初次接触易困惑</li><li>❌ 时间复杂度为立方级</li></ul><hr><h2 id=四dp-模型总结>四、DP 模型总结</h2><p>DP 模型对比总结：</p><div class=table-wrapper><table><thead><tr><th>类型</th><th>状态转移方程</th><th>时间复杂度</th><th>空间复杂度</th><th>代表问题</th></tr></thead><tbody><tr><td><strong>线性 DP</strong></td><td>$dp[i] = f(dp[i-1], dp[i-2], \ldots)$</td><td>$O(n)$</td><td>$O(n)$</td><td>爬楼梯、打家劫舍</td></tr><tr><td><strong>背包 DP</strong></td><td>$dp[i][j] = \max(\text{不放}, \text{放})$</td><td>$O(nW)$</td><td>$O(nW)$</td><td>0/1 背包、完全背包</td></tr><tr><td><strong>序列 DP</strong></td><td>$dp[i][j] = f(dp[i-1][j-1], ..)$</td><td>$O(mn)$</td><td>$O(mn)$</td><td>LCS、编辑距离</td></tr><tr><td><strong>区间 DP</strong></td><td>$dp[i][j] = \max_k(dp[i][k] + dp[k][j])$</td><td>$O(n^3)$</td><td>$O(n^2)$</td><td>戳气球、矩阵链乘</td></tr></tbody></table></div><hr><h2 id=总结与建议>总结与建议</h2><ol><li><strong>从问题出发</strong> ：确定能否用 DP（有最优子结构和重叠子问题）</li><li><strong>定义状态</strong> ：清晰地定义 <code>dp[...]</code> 的含义</li><li><strong>写出转移方程</strong> ：确定状态间的关系</li><li><strong>确定初始条件</strong> ：边界情况的处理</li><li><strong>实现与优化</strong> ：代码实现，再考虑空间+时间优化</li></ol></section><footer class=article-footer><section class=article-tags><a href=/WangScape/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/>动态规划</a>
 <a href=/WangScape/tags/%E7%8A%B6%E6%80%81%E8%BD%AC%E7%A7%BB%E6%96%B9%E7%A8%8B/>状态转移方程</a></section></footer><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css integrity=sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV crossorigin=anonymous><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js integrity=sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8 crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js integrity=sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05 crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{const e=[".main-article",".widget--toc"];e.forEach(e=>{const t=document.querySelector(e);t&&renderMathInElement(t,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article><a href=/WangScape/p/p1004-noip-2000-%E6%8F%90%E9%AB%98%E7%BB%84-%E6%96%B9%E6%A0%BC%E5%8F%96%E6%95%B0-%E5%88%86%E6%9E%90%E4%B8%8E%E6%80%BB%E7%BB%93/><div class=article-details><h2 class=article-title>P1004 [NOIP 2000 提高组] 方格取数 分析与总结</h2></div></a></article></div></div></aside><div class=article-comments><h3 style=margin-top:40px>💬 评论</h3><div id=comments-list class=comments-container><div style=text-align:center;color:#999;padding:40px>加载评论中...</div></div><div style="text-align:center;margin:30px 0"><button type=button class=btn-open-comment-form onclick=openCommentForm()>
 💬 发表评论</button></div><div id=comment-modal class=comment-modal style=display:none data-api-base=https://wang-scape.vercel.app data-github-repo=w2343419-del/WangScape data-github-label-approved=approved data-github-label-pending=pending data-github-label-comment=comment><div class=comment-modal-content><div class=comment-modal-header><h4>💬 发表评论</h4><button type=button class=comment-modal-close onclick=closeCommentForm()>✕</button></div><div id=replying-to style=display:none;margin-bottom:10px;font-size:13px;color:#666;padding:10px;background:#f0f8ff;border-radius:4px>正在回复：<span id=replying-to-name style=font-weight:600></span>
 <button type=button class=comment-reply-cancel onclick=cancelReply()>取消回复</button></div><form id=comment-form onsubmit=submitComment(event)><input type=hidden id=comment-parent-id name=parent_id><div class=form-group><label for=comment-name>姓名 *</label>

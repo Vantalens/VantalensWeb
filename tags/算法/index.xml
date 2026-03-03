@@ -13,43 +13,91 @@
         
         <guid>https://w2343419-del.github.io/WangScape/p/p1004-noip-2000-%E6%8F%90%E9%AB%98%E7%BB%84-%E6%96%B9%E6%A0%BC%E5%8F%96%E6%95%B0-%E5%88%86%E6%9E%90%E4%B8%8E%E6%80%BB%E7%BB%93/</guid>
         <description>&lt;p&gt;这是一道经典但具有一定难度的棋盘模型题。虽然是 2000 年的 NOIP 题目，但作为压轴题，对于第一次接触的人来说还是相当困难的。本文总结了三种不同的解法：动态规划、DFS 记忆化和最小费用最大流，从易到难逐步展开。&lt;/p&gt;
-&lt;h2 id=&#34;题目背景与描述&#34;&gt;题目背景与描述
-&lt;/h2&gt;&lt;p&gt;NOIP 2000 提高组 T4&lt;/p&gt;
-&lt;p&gt;题目描述&lt;/p&gt;
-&lt;p&gt;设有 N×N 的方格图 (N≤9)，我们将其中的某些方格中填入正整数，而其他的方格中则放入数字 0。
+&lt;h2 id=&#34;问题&#34;&gt;问题
+&lt;/h2&gt;&lt;h3 id=&#34;题目来源&#34;&gt;题目来源
+&lt;/h3&gt;&lt;p&gt;NOIP 2000 提高组 T4&lt;/p&gt;
+&lt;h3 id=&#34;问题描述&#34;&gt;问题描述
+&lt;/h3&gt;&lt;p&gt;设有 N×N 的方格图 (N≤9)，我们将其中的某些方格中填入正整数，而其他的方格中则放入数字 0。
 某人从图的左上角的 A 点（0，0）出发，可以向下行走，也可以向右走，直到到达右下角的 B 点（N, N)。在走过的路上，他可以取走方格中的数（取走后的方格中将变为数字 0）。
 此人从 A 点到 B 点共走两次，试找出 2 条这样的路径，使得取得的数之和为最大。&lt;/p&gt;
-&lt;p&gt;输入格式&lt;/p&gt;
-&lt;p&gt;输入的第一行为一个整数 N（表示 N×N 的方格图），接下来的每行有三个整数，前两个表示位置，第三个数为该位置上所放的数。一行单独的 0 表示输入结束。&lt;/p&gt;
-&lt;p&gt;输出格式&lt;/p&gt;
-&lt;p&gt;只需输出一个整数，表示 2 条路径上取得的最大的和。&lt;/p&gt;
-&lt;p&gt;输入输出样例&lt;/p&gt;
-&lt;p&gt;输入&lt;/p&gt;
-&lt;p&gt;8&lt;/p&gt;
-&lt;p&gt;2 3 13&lt;/p&gt;
-&lt;p&gt;2 6  6&lt;/p&gt;
-&lt;p&gt;3 5  7&lt;/p&gt;
-&lt;p&gt;4 4 14&lt;/p&gt;
-&lt;p&gt;5 2 21&lt;/p&gt;
-&lt;p&gt;5 6  4&lt;/p&gt;
-&lt;p&gt;6 3 15&lt;/p&gt;
-&lt;p&gt;7 2 14&lt;/p&gt;
-&lt;p&gt;0 0  0&lt;/p&gt;
-&lt;p&gt;输出
-67&lt;/p&gt;
-&lt;p&gt;说明/提示&lt;/p&gt;
-&lt;p&gt;数据范围：1≤N≤9。&lt;/p&gt;
-&lt;p&gt;我一开始尝试是选择的先进行一轮枚举，然后再对已进行了更改的 matrix 进行再一次的枚举（就是模拟取数），但是发现难度有点过大。最后实在想不出来解决方法了，找了 Claude，它给出的解决方法是采用 dp 算法（详见解法一），我又想到了 DFS 结合剪枝的算法（感谢自己之前做的走迷宫问题，那是一道有关最少步数的算法题，刚好适用于 DFS 结合剪枝）（详见解法二），随后 Claude 还给出了一个适用于一般解的算法————费用流解法（难度过大，属于超纲解法，略写一二，详见解法三）。&lt;/p&gt;
-&lt;p&gt;ps. 解释一下为什么不能采取两次枚举。一次路径会改变地图，影响第二次，所以两条路径必须联动考虑。&lt;/p&gt;
-&lt;h3 id=&#34;解法一dp-动态规划&#34;&gt;解法一（dp 动态规划）：
-&lt;/h3&gt;&lt;p&gt;核心思想：将两条路径同步推进，用一个DP同时模拟两个人的行走。&lt;/p&gt;
-&lt;p&gt;状态设计：设 dp[k][x1][x2]，其中：&lt;/p&gt;
-&lt;p&gt;k 为当前走的步数（即 x + y 的值，从2到2N）&lt;/p&gt;
-&lt;p&gt;x1、x2 分别为两人当前所在的行号&lt;/p&gt;
-&lt;p&gt;由 k 和 x 可以推出 y = k - x（关键，这一步降低了维度），因此列号不需要单独存储&lt;/p&gt;
-&lt;p&gt;去重处理：当两人在同一格时（x1 == x2，则 y1 == y2），该格只取一次。&lt;/p&gt;
-&lt;p&gt;转移：每步两人各自可以选择向右或向下，共4种组合。&lt;/p&gt;
-&lt;p&gt;完整代码&lt;/p&gt;
+&lt;h3 id=&#34;输入输出&#34;&gt;输入输出
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;输入格式&lt;/strong&gt; ：输入的第一行为一个整数 N（表示 N×N 的方格图），接下来的每行有三个整数，前两个表示位置，第三个数为该位置上所放的数。一行单独的 0 表示输入结束。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;输出格式&lt;/strong&gt; ：只需输出一个整数，表示 2 条路径上取得的最大的和。&lt;/p&gt;
+&lt;h3 id=&#34;样例&#34;&gt;样例
+&lt;/h3&gt;&lt;p&gt;输入：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;8
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;2 3 13
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;2 6  6
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;3 5  7
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;4 4 14
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;5 2 21
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;5 6  4
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;6 3 15
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;7 2 14
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;0 0  0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;输出：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;67
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;约束条件&#34;&gt;约束条件
+&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;数据范围：1≤N≤9&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;问题分析&#34;&gt;问题分析
+&lt;/h3&gt;&lt;p&gt;为什么不能采取两次枚举（即先找一条最优路径，再在剩余格子中找第二条）？因为一次路径会改变地图（取走数字），影响第二次的结果，所以两条路径必须联动考虑，而不能独立优化。&lt;/p&gt;
+&lt;h2 id=&#34;思路分析&#34;&gt;思路分析
+&lt;/h2&gt;&lt;p&gt;三种解法的思路分别如下：&lt;/p&gt;
+&lt;h3 id=&#34;解法一动态规划&#34;&gt;解法一：动态规划
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;核心思想&lt;/strong&gt; ：将两条路径同步推进，用一个 DP 同时模拟两个人的行走。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;状态设计&lt;/strong&gt; ：设 &lt;code&gt;dp[k][x1][x2]&lt;/code&gt;，其中：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;k 为当前走的步数（即 x + y 的值，从 2 到 2N）&lt;/li&gt;
+&lt;li&gt;x1、x2 分别为两人当前所在的行号&lt;/li&gt;
+&lt;li&gt;由 k 和 x 可以推出 y = k - x（关键优化，这一步降低了维度），因此列号不需要单独存储&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;去重处理&lt;/strong&gt; ：当两人在同一格时（x1 == x2，则 y1 == y2），该格只取一次。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;状态转移&lt;/strong&gt; ：每步两人各自可以选择向右或向下，共 4 种组合。每个状态 dp[k][x1][x2] 代表走到第 k 步，人 1 在行 x1、人 2 在行 x2 时的最大取数和。&lt;/p&gt;
+&lt;h3 id=&#34;解法二dfs--记忆化搜索&#34;&gt;解法二：DFS + 记忆化搜索
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;核心思想&lt;/strong&gt; ：类似于 DP 算法（毕竟深搜和 DP 本质上就是一个东西），但添加了记忆化搜索来避免重复计算。若无记忆化搜索，计算量将是指数级爆炸，在 N=9 时约为 $4^{16}$ 次。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;实现方式&lt;/strong&gt; ：从初始状态出发，递归地尝试所有可能的转移，同时用 memo 数组缓存已计算过的状态，避免重复。在达到终点时返回 0，逐层返回最大值。&lt;/p&gt;
+&lt;h3 id=&#34;解法三费用流最小费用最大流&#34;&gt;解法三：费用流（最小费用最大流）
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;核心思想&lt;/strong&gt; ：将&amp;quot;两条路径取最大值&amp;quot;转化为网络流问题。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;建模思路&lt;/strong&gt; ：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;两条从 A 到 B 的路径 = 从源点到汇点流量为 2 的流&lt;/li&gt;
+&lt;li&gt;每个格子最多取一次 = 每个节点容量限制&lt;/li&gt;
+&lt;li&gt;取得数字最大 = 费用最大（转为最小费用取负值）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;拆点处理&lt;/strong&gt; ：每个格子 (i,j) 拆成两个节点 in 和 out：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;in → out 容量 1，费用 -map[i][j]（第一条路径取数）&lt;/li&gt;
+&lt;li&gt;in → out 再加容量 1，费用 0（第二条路径经过但不取数）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;连边&lt;/strong&gt; ：(i,j) 的 out 连向 (i+1,j) 的 in 和 (i,j+1) 的 in，容量 2，费用 0。&lt;/p&gt;
+&lt;h2 id=&#34;代码实现&#34;&gt;代码实现
+&lt;/h2&gt;&lt;h3 id=&#34;解法一动态规划-1&#34;&gt;解法一：动态规划
+&lt;/h3&gt;&lt;p&gt;完整代码&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -178,11 +226,8 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;时间复杂度：O(N³)&lt;/p&gt;
-&lt;h3 id=&#34;解法二dfs--剪枝&#34;&gt;解法二（DFS + 剪枝）：
-&lt;/h3&gt;&lt;p&gt;核心思想：类似于 dp 算法（毕竟深搜和 dp 本质上就是一个东西），但添加了记忆化搜索这一步，避免了重复搜索。（若无记忆化搜索，计算量将是指数级爆炸，在 N=9 时约为 4^16 次）&lt;/p&gt;
-&lt;p&gt;完整代码&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;/div&gt;&lt;h3 id=&#34;解法二dfs--记忆化搜索-1&#34;&gt;解法二：DFS + 记忆化搜索
+&lt;/h3&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -308,35 +353,8 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;时间复杂度：O(N³)&lt;/p&gt;
-&lt;h3 id=&#34;解法三费用流解法&#34;&gt;解法三（费用流解法）：
-&lt;/h3&gt;&lt;p&gt;核心思想：将&amp;quot;两条路径取最大值&amp;quot;转化为网络流问题。&lt;/p&gt;
-&lt;p&gt;建模思路
-关键观察：
-两条从 A 到 B 的路径 = 从源点到汇点流量为 2 的流
-每个格子最多取一次 = 每个节点容量为 1
-取得数字最大 = 费用最大（转为最小费用取负值）&lt;/p&gt;
-&lt;p&gt;拆点： 每个格子 (i,j) 拆成两个节点 in 和 out：
-in → out：容量 1，费用 -map[i][j]（取负是因为求最小费用）
-in → out：再加一条容量 1，费用 0（允许第二条路径经过但不重复取值）
-即：合并为容量 2，但只有第一单位流有收益&lt;/p&gt;
-&lt;p&gt;连边： (i,j) 的 out 连向 (i+1,j) 的 in 和 (i,j+1) 的 in，容量 2，费用 0。&lt;/p&gt;
-&lt;p&gt;源汇： 源点 S 连 (1,1).in，(N,N).out 连汇点 T，流量均为 2。&lt;/p&gt;
-&lt;p&gt;每个格子(i,j)拆点后:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;容量1，费用-val   (第一条路经过，取走数字)
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;in(i,j) ================&amp;gt; out(i,j)
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;容量1，费用0     (第二条路经过，数字已取走)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;完整代码（MCMF，SPFA实现）&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;/div&gt;&lt;h3 id=&#34;解法三费用流最小费用最大流-1&#34;&gt;解法三：费用流（最小费用最大流）
+&lt;/h3&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;  1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;  2
@@ -578,7 +596,114 @@ in → out：再加一条容量 1，费用 0（允许第二条路径经过但不
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;优势：可轻松扩展到 K 条路径。&lt;/p&gt;
+&lt;/div&gt;&lt;h2 id=&#34;时间复杂度与优缺点&#34;&gt;时间复杂度与优缺点
+&lt;/h2&gt;&lt;h3 id=&#34;解法一动态规划-2&#34;&gt;解法一：动态规划
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;时间复杂度&lt;/strong&gt; ：$O(N^3)$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;状态数：$O(N^2) \times O(N^2) / 2 = O(N^4)$，但由于降维和 x1、x2 的约束，实际为 $O(N^3)$&lt;/li&gt;
+&lt;li&gt;每个状态有 4 次转移&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;空间复杂度&lt;/strong&gt; ：$O(N^3)$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;dp 数组大小为 $2N \times N \times N$&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;优点&lt;/strong&gt; ：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;✅ 思路清晰，易于理解&lt;/li&gt;
+&lt;li&gt;✅ 一次遍历解决问题&lt;/li&gt;
+&lt;li&gt;✅ 代码相对简洁&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;缺点&lt;/strong&gt; ：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;❌ 空间占用较大（N=9 时约 1.3MB）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;解法二dfs--记忆化搜索-2&#34;&gt;解法二：DFS + 记忆化搜索
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;时间复杂度&lt;/strong&gt; ：$O(N^3)$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;状态数与 DP 相同&lt;/li&gt;
+&lt;li&gt;每个状态最多计算一次（记忆化）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;空间复杂度&lt;/strong&gt; ：$O(N^3)$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;memo 和 visited 数组各占 $O(N^3)$&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;优点&lt;/strong&gt; ：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;✅ 逻辑自然，从上向下思考&lt;/li&gt;
+&lt;li&gt;✅ 易于添加剪枝（虽然此题中剪枝不多）&lt;/li&gt;
+&lt;li&gt;✅ 可灵活调整状态定义&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;缺点&lt;/strong&gt; ：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;❌ 递归调用栈深度为 $O(N)$（栈空间）&lt;/li&gt;
+&lt;li&gt;❌ 空间复杂度与 DP 相同&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;解法三费用流&#34;&gt;解法三：费用流
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;时间复杂度&lt;/strong&gt; ：$O(Flow \times SPFA) = O(2 \times E \log V) = O(N^2 \times N^2) = O(N^4)$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;流量为 2&lt;/li&gt;
+&lt;li&gt;SPFA 每次 $O(V \log V)$，其中 $V = O(N^2)$，$E = O(N^2)$&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;空间复杂度&lt;/strong&gt; ：$O(V + E) = O(N^2)$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;图的存储空间&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;优点&lt;/strong&gt; ：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;✅ 适用于更一般的场景（多条路径、带限制的图等）&lt;/li&gt;
+&lt;li&gt;✅ 代码框架可复用于其他费用流问题&lt;/li&gt;
+&lt;li&gt;✅ 空间占用相对较少&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;缺点&lt;/strong&gt; ：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;❌ 时间复杂度最高（约 $O(N^4)$ vs $O(N^3)$）&lt;/li&gt;
+&lt;li&gt;❌ 代码长且复杂，易出错&lt;/li&gt;
+&lt;li&gt;❌ 难度陡升，超出竞赛难度范围&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;对比与总结&#34;&gt;对比与总结
+&lt;/h3&gt;&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;特性&lt;/th&gt;
+          &lt;th&gt;解法一 DP&lt;/th&gt;
+          &lt;th&gt;解法二 DFS&lt;/th&gt;
+          &lt;th&gt;解法三 费用流&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;易理解度&lt;/td&gt;
+          &lt;td&gt;★★★★☆&lt;/td&gt;
+          &lt;td&gt;★★★★☆&lt;/td&gt;
+          &lt;td&gt;★☆☆☆☆&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;实现难度&lt;/td&gt;
+          &lt;td&gt;★★☆☆☆&lt;/td&gt;
+          &lt;td&gt;★★☆☆☆&lt;/td&gt;
+          &lt;td&gt;★★★★★&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;时间复杂度&lt;/td&gt;
+          &lt;td&gt;$O(N^3)$&lt;/td&gt;
+          &lt;td&gt;$O(N^3)$&lt;/td&gt;
+          &lt;td&gt;$O(N^4)$&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;空间复杂度&lt;/td&gt;
+          &lt;td&gt;$O(N^3)$&lt;/td&gt;
+          &lt;td&gt;$O(N^3)$&lt;/td&gt;
+          &lt;td&gt;$O(N^2)$&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;推荐指数&lt;/td&gt;
+          &lt;td&gt;★★★★★&lt;/td&gt;
+          &lt;td&gt;★★★★☆&lt;/td&gt;
+          &lt;td&gt;★★☆☆☆&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;结论&lt;/strong&gt; ：对于此题，&lt;strong&gt;解法一（DP）&lt;/strong&gt; 是最佳选择，既清晰高效又不过度复杂。解法二适合想要练习 DFS 的同学。解法三虽然优雅，但对于 N≤9 的规模效率不如 DP，仅作扩展知识。&lt;/p&gt;
 </description>
         </item>
         
