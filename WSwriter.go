@@ -29,6 +29,7 @@ package main
 
 import (
     // ===== 数据处理 =====
+    "bufio"           // 带缓冲的I/O（读取Hugo输出）
     "bytes"           // 字节缓冲区操作
     "encoding/base64" // Base64编码/解码
     "encoding/csv"    // CSV文件处理
@@ -78,6 +79,7 @@ const (
 )
 
 var hugoPath string
+var hugoURL string   // 存储Hugo server的URL，供Live Preview使用
 
 const (
     maxCommentNameLen   = 50
@@ -93,6 +95,46 @@ var (
         sync.Mutex
         records map[string][]time.Time
     }{records: make(map[string][]time.Time)}
+)
+
+// ==================== 邮件重试队列（P1优化） ====================
+// 用于异步、可靠的邮件发送，支持重试机制
+
+type EmailJob struct {
+	Settings CommentSettings
+	Comment  Comment
+	PostTitle string
+	Retries  int
+	CreatedAt time.Time
+}
+
+const (
+	maxEmailRetries = 3
+	emailQueueSize  = 100
+	emailWorkerCount = 2
+)
+
+var (
+	emailQueue = make(chan EmailJob, emailQueueSize)
+	emailStats = struct {
+		sync.Mutex
+		sent     int64
+		failed   int64
+		retried  int64
+	}{}
+)
+
+// 全局翻译缓存（P2优化）
+var translationCache = struct {
+	sync.RWMutex
+	items map[string]string // key: md5(text+lang) -> translated
+}{items: make(map[string]string)}
+
+// 全局文章列表缓存（P2优化）
+var (
+	postsCache []Post
+	postsCacheExpiry time.Time
+	postsCacheMutex sync.RWMutex
 )
 
 // ==================== 数据结构定义 ====================
@@ -238,6 +280,89 @@ func isCommentBlacklisted(settings CommentSettings, ip, author, email, content s
     }
 
     return false
+}
+
+// ==================== 邮件队列处理（P1优化） ====================
+
+// startEmailWorkers 启动邮件发送工作线程（带重试机制）
+// 在 init() 中调用，处理异步邮件发送
+func startEmailWorkers() {
+	for i := 0; i < emailWorkerCount; i++ {
+		go emailWorker(i)
+	}
+	log.Printf("[INFO] Started %d email worker threads", emailWorkerCount)
+}
+
+// emailWorker 邮件工作线程（带指数退避重试）
+func emailWorker(id int) {
+	for job := range emailQueue {
+		log.Printf("[EMAIL-WORKER-%d] Processing email job for %s (attempt %d/%d)", 
+			id, job.PostTitle, job.Retries+1, maxEmailRetries)
+		
+		// 尝试发送邮件
+		err := sendCommentNotification(job.Settings, job.Comment, job.PostTitle)
+		
+		if err == nil {
+			// 成功
+			emailStats.Lock()
+			emailStats.sent++
+			emailStats.Unlock()
+			log.Printf("[EMAIL-WORKER-%d] ✅ Email sent successfully", id)
+			continue
+		}
+		
+		// 失败，检查是否需要重试
+		job.Retries++
+		if job.Retries < maxEmailRetries {
+			// 指数退避：1秒 -> 2秒 -> 4秒
+			waitTime := time.Duration(1<<uint(job.Retries)) * time.Second
+			log.Printf("[EMAIL-WORKER-%d] ⚠️ Send failed: %v, retrying in %v", id, err, waitTime)
+			
+			time.Sleep(waitTime)
+			
+			emailStats.Lock()
+			emailStats.retried++
+			emailStats.Unlock()
+			
+			// 重新入队
+			select {
+			case emailQueue <- job:
+					// 成功入队
+			case <-time.After(time.Second):
+				// 队列满，记录为失败
+				emailStats.Lock()
+				emailStats.failed++
+				emailStats.Unlock()
+				log.Printf("[EMAIL-WORKER-%d] ❌ Email queue full, discarding job", id)
+			}
+		} else {
+			// 已达到最大重试次数
+			emailStats.Lock()
+			emailStats.failed++
+			emailStats.Unlock()
+			log.Printf("[EMAIL-WORKER-%d] ❌ Email failed after %d retries: %v", id, maxEmailRetries, err)
+		}
+	}
+}
+
+// queueEmailNotification 将邮件投递到队列（不阻塞）
+// 替代之前的 go sendCommentNotification() 方式
+func queueEmailNotification(settings CommentSettings, comment Comment, postTitle string) {
+	job := EmailJob{
+		Settings:  settings,
+		Comment:   comment,
+		PostTitle: postTitle,
+		Retries:   0,
+		CreatedAt: time.Now(),
+	}
+	
+	select {
+	case emailQueue <- job:
+		log.Printf("[QUEUE] Email job enqueued: %s (queue size: %d/%d)", postTitle, len(emailQueue), emailQueueSize)
+	case <-time.After(time.Millisecond):
+		// 队列满，立即返回但记录警告
+		log.Printf("[WARN] Email queue full, dropping notification for: %s", postTitle)
+	}
 }
 
 // sendCommentNotification 发送新评论待审核的邮件通知给管理员
@@ -607,62 +732,76 @@ func decryptPassword(encryptedPassword string) (string, error) {
 	return string(plaintext), nil
 }
 
-// getSMTPPassword 从配置或环境变量安全地获取SMTP密码
+// getSMTPPassword 从配置或环境变量安全地获取SMTP密码（强制加密）
+// ⚠️ 安全性改进：不允许使用明文密码，必须加密或使用环境变量
 func getSMTPPassword(settings CommentSettings) (string, error) {
-	// 优先从环境变量读取（用于生产环境）
+	// 方式1：优先从环境变量读取（推荐用于生产环境）
 	envPassword := os.Getenv("SMTP_PASSWORD")
 	if envPassword != "" {
 		return envPassword, nil
 	}
 	
-	// 如果配置文件中的密码是加密的，则解密
+	// 方式2：从配置文件解密（必须已加密）
 	if settings.SMTPPass != "" {
-		// 尝试解密（如果是加密的）
+		// 尝试解密
 		decrypted, err := decryptPassword(settings.SMTPPass)
 		if err == nil {
 			return decrypted, nil
 		}
-		// 如果解密失败，返回原始值（可能是明文）
-		log.Printf("[WARN] Failed to decrypt SMTP password, using plaintext: %v", err)
-		return settings.SMTPPass, nil
+		
+		// 检查是否看起来像base64（已加密格式）
+		if isBase64(settings.SMTPPass) {
+			// 尝试解密应该成功，如果失败说明密钥错误
+			log.Printf("[ERROR] SMTP密码解密失败，可能是加密密钥错误: %v", err)
+			return "", fmt.Errorf("SMTP password decryption failed - check SMTP_ENCRYPTION_KEY environment variable")
+		}
+		
+		// 如果不是base64格式，说明是明文（不安全！）
+		log.Printf("[ERROR] SMTP password appears to be in plaintext - this is insecure!")
+		log.Printf("[ERROR] Please encrypt the password using: ")
+		log.Printf("[ERROR]   1. Set SMTP_ENCRYPTION_KEY environment variable")
+		log.Printf("[ERROR]   2. Use the encryption function to encrypt your password")
+		log.Printf("[ERROR]   3. Update config/comment_settings.json with encrypted value")
+		return "", fmt.Errorf("SMTP password must be encrypted - plaintext passwords are not allowed")
 	}
 	
-	return "", fmt.Errorf("SMTP password not found")
+	return "", fmt.Errorf("SMTP password not configured - set SMTP_PASSWORD env var or encrypt password in config")
+}
+
+// isBase64 检查字符串是否是有效的base64格式
+func isBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
 }
 
 // ==================== JWT身份认证系统 ====================
 
 var jwtSecret []byte
 
-// initJWTSecret 初始化JWT密钥
+// initJWTSecret 初始化JWT密钥（强制环境变量配置）
+// ⚠️ 安全性改进：不再从文件读取或自动生成，确保密钥安全管理
 func initJWTSecret() {
-	// 优先从环境变量读取
 	secretEnv := os.Getenv("JWT_SECRET")
-	if secretEnv != "" {
+	if secretEnv == "" {
+		log.Fatalf("[FATAL] JWT_SECRET environment variable not set.\n"+
+			"Please set it with: export JWT_SECRET=$(openssl rand -hex 32)\n"+
+			"Or for Windows PowerShell: $env:JWT_SECRET = (openssl rand -hex 32)\n"+
+			"This is a breaking change for security reasons - secrets must NOT be stored in files.")
+	}
+	
+	// 验证密钥长度（至少64个hex字符 = 32字节）
+	if len(secretEnv) < 64 {
+		log.Fatalf("[FATAL] JWT_SECRET must be at least 64 hex characters (32 bytes). Current length: %d", len(secretEnv))
+	}
+	
+	// 尝试从hex字符串解码（推荐方式）
+	if decoded, err := hex.DecodeString(secretEnv); err == nil && len(decoded) >= 32 {
+		jwtSecret = decoded
+		log.Printf("[INFO] JWT secret loaded from environment (length: %d bytes)", len(jwtSecret))
+	} else {
+		// 备选：直接使用字符串作为密钥
 		jwtSecret = []byte(secretEnv)
-		return
-	}
-	
-	// 从文件读取
-	secretFile := filepath.Join(hugoPath, "config", ".jwt_secret")
-	if secret, err := os.ReadFile(secretFile); err == nil {
-		jwtSecret = secret
-		return
-	}
-	
-	// 生成新密钥
-	newSecret := make([]byte, 32)
-	if _, err := rand.Read(newSecret); err != nil {
-		log.Fatalf("[FATAL] 无法生成JWT密钥，请设置JWT_SECRET环境变量: %v", err)
-		return
-	}
-	
-	jwtSecret = newSecret
-	
-	// 尝试保存到文件（用于后续使用）
-	secretFile = filepath.Join(hugoPath, "config", ".jwt_secret")
-	if err := os.WriteFile(secretFile, newSecret, 0600); err != nil {
-		log.Printf("[WARN] Failed to save JWT secret: %v", err)
+		log.Printf("[WARN] JWT secret loaded as raw string, recommend using hex format for better cryptography")
 	}
 }
 
@@ -1126,25 +1265,62 @@ func init() {
 }
 
 // translateText 使用多源翻译API翻译文本
+// translateText 使用多源翻译API翻译文本（带缓存P2优化）
 func translateText(text, sourceLang, targetLang string) string {
-    input := strings.TrimSpace(text)
-    if input == "" || sourceLang == "" || targetLang == "" || sourceLang == targetLang {
-        return text
-    }
+	// 直接调用带缓存的版本
+	return translateTextWithCache(text, sourceLang, targetLang)
+}
 
-    if translated, err := translateWithMyMemory(input, sourceLang, targetLang); err == nil {
-        return translated
-    } else {
-        log.Printf("[WARN] MyMemory翻译失败: %v", err)
-    }
+// translateTextWithCache 带缓存的翻译函数（P2优化）
+func translateTextWithCache(text, sourceLang, targetLang string) string {
+	input := strings.TrimSpace(text)
+	if input == "" || sourceLang == "" || targetLang == "" || sourceLang == targetLang {
+		return text
+	}
 
-    if translated, err := translateWithGoogle(input, sourceLang, targetLang); err == nil {
-        return translated
-    } else {
-        log.Printf("[WARN] Google备用翻译失败: %v", err)
-    }
+	// 计算缓存键
+	cacheKey := generateTranslationCacheKey(input, sourceLang, targetLang)
 
-    return text
+	// 检查缓存
+	translationCache.RLock()
+	if cached, ok := translationCache.items[cacheKey]; ok {
+		translationCache.RUnlock()
+		log.Printf("[CACHE-HIT] Translation cache hit: %s -> %s (key: %s)", sourceLang, targetLang, cacheKey[:8]+"...")
+		return cached
+	}
+	translationCache.RUnlock()
+
+	// 执行翻译
+	var translated string
+	var err error
+
+	if translated, err = translateWithMyMemory(input, sourceLang, targetLang); err == nil {
+		log.Printf("[TRANSLATE-MYMEMORY] Successfully translated %d chars from %s to %s", len(input), sourceLang, targetLang)
+	} else {
+		log.Printf("[WARN] MyMemory翻译失败: %v", err)
+		// 尝试备用方案
+		if translated, err = translateWithGoogle(input, sourceLang, targetLang); err == nil {
+			log.Printf("[TRANSLATE-GOOGLE] Google备用翻译成功")
+		} else {
+			log.Printf("[WARN] Google备用翻译失败: %v", err)
+			return text
+		}
+	}
+
+	// 保存到缓存
+	translationCache.Lock()
+	translationCache.items[cacheKey] = translated
+	translationCache.Unlock()
+	
+	log.Printf("[CACHE-SAVE] Translation cached (cache size: %d)", len(translationCache.items))
+
+	return translated
+}
+
+// generateTranslationCacheKey 生成翻译缓存键
+func generateTranslationCacheKey(text, sourceLang, targetLang string) string {
+	h := sha256.Sum256([]byte(text + "|" + sourceLang + "|" + targetLang))
+	return hex.EncodeToString(h[:])
 }
 
 func translateWithMyMemory(text, sourceLang, targetLang string) (string, error) {
@@ -1507,6 +1683,17 @@ func getGitStatus() map[string]string {
 // getPosts 返回文章列表
 // 会遍历Hugo内容目录，转换成可序列化的Post对象
 func getPosts() []Post {
+	// P2优化：缓存文章列表（1分钟过期）
+	postsCacheMutex.RLock()
+	if time.Now().Before(postsCacheExpiry) && len(postsCache) > 0 {
+		defer postsCacheMutex.RUnlock()
+		log.Printf("[CACHE-HIT] Posts cache hit (expires in %v, %d posts)", 
+			postsCacheExpiry.Sub(time.Now()), len(postsCache))
+		return postsCache
+	}
+	postsCacheMutex.RUnlock()
+
+	// 缓存未命中，执行实际查询
 	var posts []Post
 	gitStatus := getGitStatus()
 
@@ -1593,6 +1780,14 @@ func getPosts() []Post {
 	if len(posts) > 50 {
 		posts = posts[:50]
 	}
+
+	// P2优化：保存到缓存
+	postsCacheMutex.Lock()
+	postsCache = posts
+	postsCacheExpiry = time.Now().Add(1 * time.Minute)  // 1分钟过期
+	postsCacheMutex.Unlock()
+	
+	log.Printf("[CACHE-SAVE] Posts list cached (expires in 1 minute, %d posts)", len(posts))
 
 	return posts
 }
@@ -2108,6 +2303,15 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, htmlTemplate)
 }
 
+// handleHugoURL 返回Hugo server的实际URL，供VS Code Live Preview使用
+func handleHugoURL(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{
+		"url": hugoURL,
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
 func handleGetPosts(w http.ResponseWriter, r *http.Request) {
 	posts := getPosts()
 	w.Header().Set("Content-Type", "application/json")
@@ -2344,6 +2548,44 @@ func handleDeletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 // getCommentsFromGitHub 从GitHub Issues获取评论
+// checkGitHubRateLimit 检查GitHub API速率限制（P1优化）
+// 防止因频繁调用而被限流
+func checkGitHubRateLimit(resp *http.Response) error {
+	remaining := resp.Header.Get("X-RateLimit-Remaining")
+	reset := resp.Header.Get("X-RateLimit-Reset")
+	limit := resp.Header.Get("X-RateLimit-Limit")
+	
+	remainingInt := 0
+	if remaining != "" {
+		remainingInt, _ = strconv.Atoi(remaining)
+	}
+	
+	limitInt := 0
+	if limit != "" {
+		limitInt, _ = strconv.Atoi(limit)
+	}
+	
+	if remaining != "" && reset != "" {
+		resetUnix, _ := strconv.ParseInt(reset, 10, 64)
+		resetTime := time.Unix(resetUnix, 0)
+		duration := resetTime.Sub(time.Now())
+		
+		log.Printf("[GITHUB-API] Rate Limit - Remaining: %d/%s, Reset in: %v", 
+			remainingInt, limit, duration)
+		
+		if remainingInt == 0 {
+			return fmt.Errorf("GitHub API rate limit exceeded - reset in %v", duration)
+		}
+		
+		// 警告：剩余请求少于10个
+		if remainingInt < 10 {
+			log.Printf("[WARN] GitHub API rate limit low (remaining: %d)", remainingInt)
+		}
+	}
+	
+	return nil
+}
+
 func getCommentsFromGitHub(postPath, repo, token string) ([]Comment, error) {
 	// 构建GitHub API URL - 只获取open状态的Issues
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/issues?state=open&labels=comment&per_page=100", repo)
@@ -2363,6 +2605,12 @@ func getCommentsFromGitHub(postPath, repo, token string) ([]Comment, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	
+	// P1优化：检查速率限制
+	if err := checkGitHubRateLimit(resp); err != nil {
+		log.Printf("[ERROR] %v", err)
+		// 不中断，继续处理但记录警告
+	}
 	
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
@@ -2640,22 +2888,15 @@ func handleAddComment(w http.ResponseWriter, r *http.Request) {
     log.Printf("[AUDIT] addComment: author=%s ip=%s path=%s approved=%v", 
         data.Author, ipAddress, data.PostPath, comment.Approved)
 
-    // 发送邮件通知（不阻塞主流程）
-    go func() {
-        log.Printf("[DEBUG] 准备发送新评论通知邮件...")
-        postTitle := ""
-        fullPath := filepath.Join(hugoPath, data.PostPath)
-        if content, err := os.ReadFile(fullPath); err == nil {
-            fm := parseFrontmatter(string(content))
-            postTitle = fm.Title
-        }
-        log.Printf("[DEBUG] 文章标题: %s", postTitle)
-        if err := sendCommentNotification(settings, comment, postTitle); err != nil {
-            log.Printf("[ERROR] 新评论通知邮件发送失败: %v", err)
-        } else {
-            log.Printf("[INFO] 新评论通知邮件已发送")
-        }
-    }()
+    // 发送邮件通知（异步队列，不阻塞主流程，支持重试）
+    // 改进：使用邮件队列而不是 go func()，支持失败重试
+    postTitle := ""
+    fullPath := filepath.Join(hugoPath, data.PostPath)
+    if content, err := os.ReadFile(fullPath); err == nil {
+        fm := parseFrontmatter(string(content))
+        postTitle = fm.Title
+    }
+    queueEmailNotification(settings, comment, postTitle)
 
 	respondJSON(w, http.StatusOK, APIResponse{Success: true, Message: "评论已提交，等待审核"})
 }
@@ -2815,24 +3056,18 @@ func handleApproveComment(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	// 发送邮件通知（审批操作）- 静默发送，不显示给访客
-	go func() {
-		settings := loadCommentSettings()
-		postTitle := extractPostTitle(data.PostPath)
-		comment := Comment{
-			Author:    "管理员",
-			Email:     "admin@system",
-			Content:   fmt.Sprintf("评论 #%s 已被批准", data.CommentID),
-			PostPath:  data.PostPath,
-			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
-		}
-		if err := sendCommentNotification(settings, comment, "[批准] "+postTitle); err != nil {
-			log.Printf("[DEBUG] 批准通知邮件发送失败: %v", err)
-		} else {
-			log.Printf("[DEBUG] 批准通知邮件已发送")
-		}
-	}()
-	
+	// 发送邮件通知（审批操作）- 异步队列，支持重试
+	settings := loadCommentSettings()
+	postTitle := extractPostTitle(data.PostPath)
+	comment := Comment{
+		Author:    "管理员",
+		Email:     "admin@system",
+		Content:   fmt.Sprintf("评论 #%s 已被批准", data.CommentID),
+		PostPath:  data.PostPath,
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+	}
+	queueEmailNotification(settings, comment, "[批准] "+postTitle)
+    
     writeAuditLog("approve_comment", r, map[string]interface{}{ "post_path": data.PostPath, "comment_id": data.CommentID, "issue_number": data.IssueNumber })
 	respondJSON(w, http.StatusOK, APIResponse{Success: true, Message: "评论已批准"})
 }
@@ -2875,23 +3110,17 @@ func handleDeleteComment(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	// 发送邮件通知（删除操作）- 静默发送，不显示给访客
-	go func() {
-		settings := loadCommentSettings()
-		postTitle := extractPostTitle(data.PostPath)
-		comment := Comment{
-			Author:    "管理员",
-			Email:     "admin@system",
-			Content:   fmt.Sprintf("评论 #%s 已被删除", data.CommentID),
-			PostPath:  data.PostPath,
-			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
-		}
-		if err := sendCommentNotification(settings, comment, "[删除] "+postTitle); err != nil {
-			log.Printf("[DEBUG] 删除通知邮件发送失败: %v", err)
-		} else {
-			log.Printf("[DEBUG] 删除通知邮件已发送")
-		}
-	}()
+	// 发送邮件通知（删除操作）- 异步队列，支持重试
+	settings := loadCommentSettings()
+	postTitle := extractPostTitle(data.PostPath)
+	comment := Comment{
+		Author:    "管理员",
+		Email:     "admin@system",
+		Content:   fmt.Sprintf("评论 #%s 已被删除", data.CommentID),
+		PostPath:  data.PostPath,
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+	}
+	queueEmailNotification(settings, comment, "[删除] "+postTitle)
 	
     writeAuditLog("delete_comment", r, map[string]interface{}{ "post_path": data.PostPath, "comment_id": data.CommentID, "issue_number": data.IssueNumber })
 	respondJSON(w, http.StatusOK, APIResponse{Success: true, Message: "评论已删除"})
@@ -2940,16 +3169,10 @@ func handleUpdateComment(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("[INFO] 成功更新GitHub Issue #%d", data.IssueNumber)
 		
-		// 发送邮件通知（编辑操作）- 静默发送，不显示给访客
-		go func() {
-			settings := loadCommentSettings()
-			postTitle := extractPostTitle(data.PostPath)
-			if err := sendCommentNotification(settings, updatedComment, "[编辑] "+postTitle); err != nil {
-				log.Printf("[DEBUG] 编辑通知邮件发送失败: %v", err)
-			} else {
-				log.Printf("[DEBUG] 编辑通知邮件已发送")
-			}
-		}()
+		// 发送邮件通知（编辑操作）- 异步队列，支持重试
+		settings := loadCommentSettings()
+		postTitle := extractPostTitle(data.PostPath)
+		queueEmailNotification(settings, updatedComment, "[编辑] "+postTitle)
 	} else {
 		// 本地文件的更新逻辑（如果需要）
 		log.Printf("[DEBUG] 本地评论更新功能尚未实现")
@@ -3910,6 +4133,83 @@ func openBrowser(url string) {
 	}
 }
 
+// ==================== Hugo服务器启动（自动化预览） ====================
+// startHugoServer 启动Hugo静态站点生成器并解析其输出来获取正确的访问地址
+// 返回Hugo server的实际URL（如 http://localhost:14746/WangScape/ ）
+// 该URL会被写入 .vscode/hugo-url.txt 供VS Code Live Preview扩展使用
+func startHugoServer() string {
+	tempHugoURL := ""
+	hugoPathExec := "hugo" // 使用PATH中的hugo命令
+
+	// 启动Hugo子进程，读取其输出
+	cmd := exec.Command(hugoPathExec, "server", "-D")
+	cmd.Dir = "." // 在当前目录执行
+
+	// 创建输出管道并捕获stdout
+	outPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Printf("[WARN] Failed to capture Hugo stdout: %v", err)
+		return ""
+	}
+
+	// 捕获stderr用于错误诊断
+	errPipe, err := cmd.StderrPipe()
+	if err != nil {
+		log.Printf("[WARN] Failed to capture Hugo stderr: %v", err)
+		return ""
+	}
+
+	// 启动命令
+	if err := cmd.Start(); err != nil {
+		log.Printf("[WARN] Failed to start Hugo server: %v", err)
+		return ""
+	}
+
+	// 在后台线程中读取输出
+	go func() {
+		scanner := bufio.NewScanner(outPipe)
+		for scanner.Scan() {
+			line := scanner.Text()
+			log.Printf("[HUGO] %s", line)
+
+			// 解析Hugo输出中的URL信息
+			// 输出格式: "Web Server is available at http://localhost:14746/WangScape/ (bind address 127.0.0.1)"
+			if strings.Contains(line, "Web Server is available at") {
+				parts := strings.Split(line, "Web Server is available at ")
+				if len(parts) > 1 {
+					urlPart := strings.Fields(parts[1])[0]
+					tempHugoURL = urlPart
+					hugoURL = urlPart  // 更新全局变量
+					log.Printf("[HUGO-URL] Detected: %s", hugoURL)
+
+					// 将URL写入文件，供VS Code Live Preview扩展读取
+					urlFile := filepath.Join(".vscode", "hugo-url.txt")
+					if err := os.WriteFile(urlFile, []byte(hugoURL), 0644); err != nil {
+						log.Printf("[WARN] Failed to write Hugo URL to file: %v", err)
+					}
+				}
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Printf("[HUGO-ERROR] stdout scan error: %v", err)
+		}
+	}()
+
+	// 在另一个后台线程中读取stderr
+	go func() {
+		scanner := bufio.NewScanner(errPipe)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if line != "" {
+				log.Printf("[HUGO-WARN] %s", line)
+			}
+		}
+	}()
+
+	log.Printf("[Hugo] Server started (PID: %d)", cmd.Process.Pid)
+	return tempHugoURL
+}
+
 // ==================== 请求体大小限制 ====================
 // limitRequestBody 中间件工厂：限制HTTP请求体大小，防止攻击者突破服务器
 // 当做手为中离砲嗎者超过限制时，直接中断连接，防止客户端继续虚送数据
@@ -3966,6 +4266,18 @@ func main() {
 	// 加载.env文件中的环境变量（用于开发环境配置）
 	loadEnvFile(".env")
 	
+	// 启动邮件工作线程（P1优化：支持重试机制）
+	startEmailWorkers()
+
+	// 启动Hugo服务器（自动化预览）
+	log.Println("[STARTUP] Starting Hugo server...")
+	hugoURL := startHugoServer()
+	if hugoURL != "" {
+		log.Printf("[STARTUP] Hugo server URL: %s", hugoURL)
+	} else {
+		log.Printf("[WARN] Hugo server URL not detected, Live Preview may not work automatically")
+	}
+	
 	// 调试：打印加载的凭据
 	adminUser := os.Getenv("ADMIN_USERNAME")
 	adminPass := os.Getenv("ADMIN_PASSWORD")
@@ -4007,6 +4319,7 @@ func main() {
 	
 	// 注册所有API路由
 	rootMux.HandleFunc("/", handleIndex)
+    rootMux.HandleFunc("/api/hugo-url", withCORS(handleHugoURL))
     rootMux.HandleFunc("/api/login", withCORS(limitRequestBody(handleLogin, 4<<10)))
     rootMux.HandleFunc("/api/refresh-token", withCORS(limitRequestBody(handleRefreshToken, 4<<10)))
     rootMux.HandleFunc("/api/posts", withCORS(handleGetPosts))

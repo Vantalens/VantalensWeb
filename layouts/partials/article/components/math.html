@@ -1,6 +1,47 @@
 {{- partial "helper/external" (dict "Context" . "Namespace" "KaTeX") -}}
 <script>
-    window.addEventListener("DOMContentLoaded", () => {
+    const fallbackKatexAssets = {
+        css: "https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.css",
+        js: "https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.js",
+        autoRender: "https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+    };
+
+    const loadScript = (src) => new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+
+    const loadStyle = (href) => {
+        if (document.querySelector(`link[href="${href}"]`)) {
+            return;
+        }
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = href;
+        document.head.appendChild(link);
+    };
+
+    const ensureKatexAvailable = async () => {
+        if (typeof renderMathInElement === "function" && typeof katex === "object") {
+            return;
+        }
+
+        loadStyle(fallbackKatexAssets.css);
+
+        if (typeof katex !== "object") {
+            await loadScript(fallbackKatexAssets.js);
+        }
+
+        if (typeof renderMathInElement !== "function") {
+            await loadScript(fallbackKatexAssets.autoRender);
+        }
+    };
+
+    const renderMath = () => {
         const elementsToRender = [".main-article", ".widget--toc"];
         const renderOptions = {
             delimiters: [
@@ -47,5 +88,15 @@
                 });
             }
         });
+    };
+
+    window.addEventListener("DOMContentLoaded", async () => {
+        try {
+            await ensureKatexAvailable();
+        } catch (error) {
+            console.warn("KaTeX fallback load failed:", error);
+        }
+
+        renderMath();
     });
 </script>
