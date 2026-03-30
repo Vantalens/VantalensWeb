@@ -5691,7 +5691,7 @@ var htmlTemplate = `<!DOCTYPE html>
                 <div style="font-size: 12px; color: #4f46e5; font-weight: 700; margin-bottom: 8px;">🔐 登录状态</div>
                 <div id="auth-status" style="font-size: 12px; color: var(--dash-text); margin-bottom: 10px;">未登录</div>
                 <div style="display:flex; gap:8px;">
-                    <button id="login-btn" class="dash-btn" style="flex:1;" onclick="console.log('Login button clicked!'); openLoginModal();">登录</button>
+                    <button id="login-btn" class="dash-btn" style="flex:1;" onclick="if(window.openLoginModal){openLoginModal();}else{var m=document.getElementById('login-modal');if(m){m.style.display='flex';}}">登录</button>
                     <button id="logout-btn" class="dash-btn" style="flex:1; display:none;" onclick="logout()">退出</button>
                 </div>
             </div>
@@ -5707,8 +5707,7 @@ var htmlTemplate = `<!DOCTYPE html>
         </div>
     </div>
 
-    <div id="pending-comments-view" class="view-section">
-            <div id="statistics-view" class="view-section">
+    <div id="statistics-view" class="view-section">
                 <div class="dash-sidebar">
                     <div class="dash-logo">📊 访问统计</div>
                     <button class="dash-btn" onclick="switchView('dashboard')">← 返回主面板</button>
@@ -5718,7 +5717,7 @@ var htmlTemplate = `<!DOCTYPE html>
                         <div style="font-size: 12px; color: #4f46e5; font-weight: 700; margin-bottom: 8px;">🔐 登录状态</div>
                         <div id="auth-status-stats" style="font-size: 12px; color: var(--dash-text); margin-bottom: 10px;">未登录</div>
                         <div style="display:flex; gap:8px;">
-                            <button id="login-btn-stats" class="dash-btn" style="flex:1;" onclick="openLoginModal();">登录</button>
+                            <button id="login-btn-stats" class="dash-btn" style="flex:1;" onclick="if(window.openLoginModal){openLoginModal();}else{var m=document.getElementById('login-modal');if(m){m.style.display='flex';}}">登录</button>
                             <button id="logout-btn-stats" class="dash-btn" style="flex:1; display:none;" onclick="logout()">退出</button>
                         </div>
                     </div>
@@ -5764,7 +5763,7 @@ var htmlTemplate = `<!DOCTYPE html>
                 </div>
             </div>
 
-            <div id="pending-comments-view" class="view-section">
+    <div id="pending-comments-view" class="view-section">
         <div class="dash-sidebar">
             <div class="dash-logo">未审核评论</div>
             <button class="dash-btn" onclick="switchView('dashboard')">← 返回主面板</button>
@@ -5775,7 +5774,7 @@ var htmlTemplate = `<!DOCTYPE html>
                 <div style="font-size: 12px; color: #4f46e5; font-weight: 700; margin-bottom: 8px;">🔐 登录状态</div>
                 <div id="auth-status-pending" style="font-size: 12px; color: var(--dash-text); margin-bottom: 10px;">未登录</div>
                 <div style="display:flex; gap:8px;">
-                    <button id="login-btn-pending" class="dash-btn" style="flex:1;" onclick="console.log('Login button clicked!'); openLoginModal();">登录</button>
+                    <button id="login-btn-pending" class="dash-btn" style="flex:1;" onclick="if(window.openLoginModal){openLoginModal();}else{var m=document.getElementById('login-modal');if(m){m.style.display='flex';}}">登录</button>
                     <button id="logout-btn-pending" class="dash-btn" style="flex:1; display:none;" onclick="logout()">退出</button>
                 </div>
             </div>
@@ -6054,7 +6053,7 @@ var htmlTemplate = `<!DOCTYPE html>
             <input type="password" id="login-password" placeholder="请输入密码">
             <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
                 <button class="btn-cancel" onclick="closeLoginModal()">取消</button>
-                <button class="btn-confirm" onclick="performLogin()">登录</button>
+                <button class="btn-confirm" onclick="if(window.performLogin){performLogin();}else{(async function(){var u=document.getElementById('login-username').value.trim();var p=document.getElementById('login-password').value;if(!u||!p){alert('请输入用户名和密码');return;}try{var r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});var d=await r.json().catch(function(){return {};});if(d&&d.access_token){localStorage.setItem('auth_token',d.access_token);var m=document.getElementById('login-modal');if(m){m.style.display='none';}alert('✅ 登录成功');location.reload();}else{alert(d.message||('登录失败: '+r.status));}}catch(e){alert('网络错误: '+e.message);}})();}">登录</button>
             </div>
             <p id="login-hint" style="font-size:12px; color:#64748b; margin-top:8px; display:none;"></p>
         </div>
@@ -6090,6 +6089,51 @@ var htmlTemplate = `<!DOCTYPE html>
                 openLoginModal('需要登录才能继续操作');
             }
             return response;
+        }
+
+        async function fetchWithTimeout(url, options, timeoutMs) {
+            const controller = new AbortController();
+            const timer = setTimeout(function () {
+                controller.abort();
+            }, timeoutMs || 8000);
+
+            try {
+                const finalOptions = Object.assign({}, options || {}, { signal: controller.signal });
+                return await fetch(url, finalOptions);
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        async function loginWithFallback(payload) {
+            const candidates = [];
+            candidates.push('/api/login');
+
+            const origin = window.location.origin || '';
+            if (origin.indexOf('http://127.0.0.1:8080') !== 0) {
+                candidates.push('http://127.0.0.1:8080/api/login');
+            }
+            if (origin.indexOf('http://localhost:8080') !== 0) {
+                candidates.push('http://localhost:8080/api/login');
+            }
+
+            let lastError = null;
+            for (let i = 0; i < candidates.length; i++) {
+                const url = candidates[i];
+                try {
+                    const res = await fetchWithTimeout(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }, 8000);
+                    return res;
+                } catch (err) {
+                    lastError = err;
+                    console.warn('[LOGIN] 请求失败，尝试下一个地址:', url, err && err.message ? err.message : err);
+                }
+            }
+
+            throw lastError || new Error('登录请求失败');
         }
 
         function openLoginModal(message) {
@@ -6132,11 +6176,7 @@ var htmlTemplate = `<!DOCTYPE html>
             }
             
             try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
+                const res = await loginWithFallback({ username, password });
                 
                 if (!res.ok) {
                     const data = await res.json().catch(() => ({ message: '服务器错误' }));
@@ -6158,7 +6198,7 @@ var htmlTemplate = `<!DOCTYPE html>
                 }
             } catch (e) {
                 console.error('登录错误:', e);
-                openLoginModal('网络错误: ' + e.message);
+                openLoginModal('网络错误: 无法连接后端，请确认 WSwriter 正在运行（127.0.0.1:8080）');
             }
         }
 
@@ -6170,14 +6210,18 @@ var htmlTemplate = `<!DOCTYPE html>
             const statusText = authToken ? '已登录' : '未登录';
             const statusEl = document.getElementById('auth-status');
             const statusElPending = document.getElementById('auth-status-pending');
+            const statusElStats = document.getElementById('auth-status-stats');
             if (statusEl) statusEl.textContent = statusText;
             if (statusElPending) statusElPending.textContent = statusText;
+            if (statusElStats) statusElStats.textContent = statusText;
             
             // 根据登录状态切换按钮显示
             const loginBtn = document.getElementById('login-btn');
             const logoutBtn = document.getElementById('logout-btn');
             const loginBtnPending = document.getElementById('login-btn-pending');
             const logoutBtnPending = document.getElementById('logout-btn-pending');
+            const loginBtnStats = document.getElementById('login-btn-stats');
+            const logoutBtnStats = document.getElementById('logout-btn-stats');
             
             if (authToken) {
                 // 已登录：隐藏登录按钮，显示退出按钮
@@ -6185,12 +6229,16 @@ var htmlTemplate = `<!DOCTYPE html>
                 if (logoutBtn) logoutBtn.style.display = 'block';
                 if (loginBtnPending) loginBtnPending.style.display = 'none';
                 if (logoutBtnPending) logoutBtnPending.style.display = 'block';
+                if (loginBtnStats) loginBtnStats.style.display = 'none';
+                if (logoutBtnStats) logoutBtnStats.style.display = 'block';
             } else {
                 // 未登录：显示登录按钮，隐藏退出按钮
                 if (loginBtn) loginBtn.style.display = 'block';
                 if (logoutBtn) logoutBtn.style.display = 'none';
                 if (loginBtnPending) loginBtnPending.style.display = 'block';
                 if (logoutBtnPending) logoutBtnPending.style.display = 'none';
+                if (loginBtnStats) loginBtnStats.style.display = 'block';
+                if (logoutBtnStats) logoutBtnStats.style.display = 'none';
             }
         }
 
@@ -6205,9 +6253,8 @@ var htmlTemplate = `<!DOCTYPE html>
                 loadCommentSettings();
             } else if (view === 'history') {
                 loadOperationHistory();
-                        else if (view === 'statistics') {
-                            loadStatistics();
-                        }
+            } else if (view === 'statistics') {
+                loadStatistics();
             }
         }
 
@@ -6979,15 +7026,9 @@ var htmlTemplate = `<!DOCTYPE html>
             }
         }
 
-        async function loadPendingComments() {
-                    async function loadStatistics() {
+        async function loadStatistics() {
                         try {
-                            const resp = await fetch('/api/statistics', {
-                                headers: {
-                                    'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || ''),
-                                    'Content-Type': 'application/json'
-                                }
-                            });
+                            const resp = await authFetch('/api/statistics');
                 
                             if (!resp.ok) {
                                 alert('❌ 无权查看统计数据，请先登录');
@@ -7057,7 +7098,7 @@ var htmlTemplate = `<!DOCTYPE html>
                         }
                     }
 
-                    async function loadPendingComments() {
+        async function loadPendingComments() {
             const listEl = document.getElementById('pending-comments-list');
             const countEl = document.getElementById('pending-total-count');
             const selectAll = document.getElementById('pending-select-all');
