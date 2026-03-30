@@ -12,7 +12,7 @@ math: true
 comments: true
 hidden: false
 pinned: false
-ws_sync_zh_hash: "a7c155fdc63ccf4509bc9ba68b36bc28b34b4503d05caa22ec93c2699583044f"
+ws_sync_zh_hash: "885dd1c71fb609cb69d1a0ef22aac03ad0e2ce06429c93e0d44881297fd6691e"
 ---
 
 In algorithmic problems, we can often see the shadow of dynamic programming, so here is a summary of dynamic programming (DP) and a very important part of it - the state transition equation.
@@ -86,11 +86,11 @@ __ code_block_2 __
 * * Space complexity * *: $ O (n) $
 
 * * Benefits * *:
-- ✅ The question is simple and easy to understand
-- ✅ Status definition is intuitive
+- The question is simple and easy to understand
+- Status definition is intuitive
 
 * * Cons * *:
-- Values ❌ can only be calculated in one fixed place and need to be recursed multiple times to calculate multiple times
+- Values can only be calculated in one fixed place and need to be recursed multiple times to calculate multiple times
 
 ---
 
@@ -168,11 +168,11 @@ __ code_block_7 __
 * * Space complexity * *: $ O (nW) $, optimized to $ O (W) $
 
 * * Benefits * *:
-- ✅ DP framework is classic and easy to expand
-- Optimal values for all capacities ✅ can be solved at once
+- DP framework is classic and easy to expand
+- Optimal values for all capacities can be solved at once
 
 * * Cons * *:
-- When the number or capacity of ❌ items is large, the pressure in time and space is high
+- When the number or capacity of items is large, the pressure in time and space is high
 
 ---
 
@@ -214,11 +214,11 @@ __ code_block_9 __
 * * Space complexity * *: $ O (mn) $, optimized for $ O (\ min (m, n)) $ (scrolling array)
 
 * * Benefits * *:
-- ✅ Frame for sequence alignment problems
-- ✅ Scalable to LCS specific characters (backtracking)
+- Frame for sequence alignment problems
+- Scalable to LCS specific characters (backtracking)
 
 * * Cons * *:
-- When ❌ m and n are large, the spatial pressure is large
+- When m and n are large, the spatial pressure is large
 
 ---
 
@@ -250,13 +250,13 @@ __ code_block_10 __
 * * Space complexity * *: $ O (n ^ 2) $
 
 * * Benefits * *:
-- Classic example of an ✅ interval DP
-- The idea of the ✅ "last one" is very enlightening
-- ✅ The order in which specific stamps can be obtained by backtracking
+- Classic example of an interval DP
+- The idea of the "last one" is very enlightening
+- The order in which specific stamps can be obtained by backtracking
 
 * * Cons * *:
-- The ❌ idea is relatively complex and confusing to the first contact
-- ❌ Time complexity is cubic
+- The idea is relatively complex and confusing to the first contact
+- Time complexity is cubic
 
 ---
 

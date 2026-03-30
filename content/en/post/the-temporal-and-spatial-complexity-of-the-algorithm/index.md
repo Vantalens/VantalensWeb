@@ -14,7 +14,7 @@ license: ""
 hidden: false
 comments: true
 draft: false
-ws_sync_zh_hash: "2fcf0831d5a3a29a0643e68afe898b63483f2be6b327a112b786bc83388dbd68"
+ws_sync_zh_hash: "5e5998e1b5a15c314f77c79145d3fc09d9130179c9373659487d82bb2a83571a"
 ---# Complete Guide to Algorithmic Complexity - Time, Space, and Asymptotic Time Complexity
 
 Complexity analysis is a core tool for measuring algorithmic efficiency and helps us anticipate performance bottlenecks before we write code. This article will systematically explain the time complexity, space complexity, and the meaning and application of the three progressive symbols $ O $, $\ Omega $, and $\ Theta $, and explain them with a complete example.
@@ -179,20 +179,20 @@ __ code_block_6 __
 - Time: $ O (n ^ 2) $ (worst), $\ Omega (1) $ (best, hit first pair), none $\ Theta $
 - Space: $\ Theta (1) $
 
-- ✅ No extra space, memory friendly
-- Simple ✅ implementation, no hash function required
-- Poor ❌ time efficiency, $ n = 10 ^ 4$ has 100 million operations
-- ❌ Not suitable for large scale data
+- No extra space, memory friendly
+- Simple implementation, no hash function required
+- Poor time efficiency, $ n = 10 ^ 4$ has 100 million operations
+- Not suitable for large scale data
 
 ### Solution 2: Hashtable
 
 - Time: $\ Theta (n) $ (must be traversed once, hash lookup is $ O (1) $)
 - Space: $\ Theta (n) $ (maximum of $ n $ elements in hash table)
 
-- ✅ Time efficient, linear scan once
-- ✅ Suitable for large scale data
-- ❌ Extra $ O (n) $ memory required
-- ❌ Hash collisions can degenerate in extreme cases
+- Time efficient, linear scan once
+- Suitable for large scale data
+- Extra $ O (n) $ memory required
+- Hash collisions can degenerate in extreme cases
 
 ### Comparative Summary
 
