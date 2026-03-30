@@ -4,72 +4,95 @@
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-A Hugo-based personal blog with a Go writing tool **WSwriter**. It supports local authoring, static publishing, and a GitHub Issues–based comment workflow (approve before display).
+WangScape is a bilingual Hugo blog project with a local management tool, WSwriter (Go).
 
-## Highlights
+- Hosting: GitHub Pages
+- Analytics: Busuanzi
+- Comments: GitHub Issues with moderation-first workflow
 
-- **Writing tool**: local editor, fast publish, bilingual content
-- **Static site**: Hugo build, lightweight and fast
-- **Comments**: GitHub Issues as a public inbox (moderation first)
-- **Security**: no public comment backend exposed
+## Key Features
+
+- Bilingual content management (ZH/EN)
+- Local visual editing and publishing workflow
+- Comment moderation, bulk actions, and export
+- Admin-only analytics dashboard including visitor IP stats
 
 ## Quick Start
 
-### Run WSwriter
+### 1) Run WSwriter
 
-- Windows: run WSwriter.exe
-- macOS/Linux: run ./WSwriter
+Windows:
 
-Open http://localhost:8080 to start writing.
-
-### Local Preview
-
+```bash
+WSwriter.exe
 ```
+
+Or run from source:
+
+```bash
+go run WSwriter.go
+```
+
+Open http://127.0.0.1:8080.
+
+### 2) Preview Hugo site locally
+
+```bash
 hugo server
 ```
 
-Visit http://localhost:1313.
+Open http://localhost:1313/WangScape/.
 
-## Comment Workflow (GitHub Issues)
+### 3) Build the executable
 
-This project uses **“submit → issue → approve → display”**:
-
-1) Visitors submit a comment (opens a GitHub Issue with labels `comment` + `pending`)
-2) You approve by adding the `approved` label
-3) The site only renders issues labeled `comment` + `approved`
-
-### Required Config
-
-Set the repo in [config/_default/params.toml](config/_default/params.toml):
-
-```
-[params]
-    githubCommentsRepo = "w2343419-del/WangScape"
-```
-
-Default labels:
-- `comment`
-- `pending`
-- `approved`
-
-## Structure
-
-```
-content/              # Posts
-assets/               # JS/SCSS
-config/               # Hugo config
-layouts/              # Theme overrides
-static/               # Static assets
-WSwriter.go           # Writing tool source
-WSwriter.exe          # Writing tool (Windows)
-```
-
-## Build WSwriter
-
-```
+```bash
 go build -o WSwriter.exe WSwriter.go
 ```
 
+## Login and Authorization
+
+WSwriter uses local backend auth with JWT:
+
+- Admin credentials are configured via .env (ADMIN_USERNAME / ADMIN_PASSWORD)
+- JWT secret is configured via JWT_SECRET
+- Sensitive APIs (comments, stats, settings) require authentication
+
+## Comment Workflow (GitHub Issues)
+
+Default flow: submit -> issue (comment + pending) -> moderation -> approved -> visible on site.
+
+Configuration files:
+
+- [config/_default/params.toml](config/_default/params.toml)
+- [config/comment_settings.json](config/comment_settings.json)
+
+## Analytics
+
+- Public site analytics: Busuanzi script
+- Admin dashboard analytics: aggregated by WSwriter (includes visitor IP)
+
+See [BUSUANZI_SETUP.md](BUSUANZI_SETUP.md) for details.
+
+## Project Structure
+
+```text
+content/               # Bilingual blog content
+assets/                # Frontend assets (JS/SCSS)
+config/                # Hugo and comment config
+layouts/               # Template overrides
+static/                # Static files
+WSwriter.go            # WSwriter source code
+WSwriter.exe           # Windows executable
+```
+
+## Deployment
+
+Recommended deployment:
+
+1. Build static site with Hugo
+2. Push to GitHub repository
+3. Serve with GitHub Pages
+
 ## License
 
-MIT License - see [LICENSE](LICENSE)
+MIT License. See [LICENSE](LICENSE).

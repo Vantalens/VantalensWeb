@@ -1797,6 +1797,16 @@ func getPosts() []Post {
 	return posts
 }
 
+// getPostsFresh 强制获取最新文章列表（绕过缓存）
+// 用于统计、导出等需要实时数据的场景。
+func getPostsFresh() []Post {
+    postsCacheMutex.Lock()
+    postsCache = nil
+    postsCacheExpiry = time.Time{}
+    postsCacheMutex.Unlock()
+    return getPosts()
+}
+
 // getCommentStats 获取一篇文章的评论统计信息
 // 包含pending绑定并未笄准的评论数量
 func getCommentStats(postPath string) map[string]int {
@@ -3247,7 +3257,7 @@ type SiteStatistics struct {
 // 这个函数会遍历所有发布的文章，统计它们的浏览量
 func collectPageStatistics() []PageStatistics {
 	var stats []PageStatistics
-	posts := getPosts()
+    posts := getPostsFresh()
 	
 	// 遍历所有文章
 	for _, post := range posts {
@@ -3286,7 +3296,7 @@ func collectSiteStatistics() SiteStatistics {
 	
     // 收集访客IP信息
     visitorMap := make(map[string]*VisitorIP)
-    posts := getPosts()
+    posts := getPostsFresh()
 	
     for _, post := range posts {
         comments, err := getComments(post.Path)
@@ -3321,7 +3331,7 @@ func collectSiteStatistics() SiteStatistics {
     })
 	
     stats := SiteStatistics{
-        TotalPages:      len(getPosts()),
+        TotalPages:      len(posts),
         TotalViews:      totalViews,
         TotalComments:   allStats["total_comments"].(int),
         PendingComments: allStats["total_pending"].(int),
@@ -3351,6 +3361,11 @@ func handleStatistics(w http.ResponseWriter, r *http.Request) {
 	if !requireLocal(w, r) {
 		return
 	}
+
+    // 统计接口始终返回最新数据，禁止任何缓存。
+    w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+    w.Header().Set("Pragma", "no-cache")
+    w.Header().Set("Expires", "0")
 	
 	stats := collectSiteStatistics()
 	respondJSON(w, http.StatusOK, APIResponse{Success: true, Data: stats})
@@ -7028,7 +7043,9 @@ var htmlTemplate = `<!DOCTYPE html>
 
         async function loadStatistics() {
                         try {
-                            const resp = await authFetch('/api/statistics');
+                            const resp = await authFetch('/api/statistics?t=' + Date.now(), {
+                                cache: 'no-store'
+                            });
                 
                             if (!resp.ok) {
                                 alert('❌ 无权查看统计数据，请先登录');
