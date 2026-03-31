@@ -22,22 +22,24 @@
         <div class="ws-cinema-mist" aria-hidden="true"></div>
         <div class="ws-cinema-vignette" aria-hidden="true"></div>
 
+        <div class="ws-hero-actions">
+            {{ range .Translations }}
+            <a class="ws-btn ws-btn-ghost" href="{{ .Permalink }}">{{ .Language.LanguageName }}</a>
+            {{ end }}
+            <button class="ws-btn" type="button" data-home-theme-toggle>
+                {{ if $isZh }}切换明暗{{ else }}Theme Mode{{ end }}
+            </button>
+        </div>
+
         <div class="ws-hero-content ws-cinema-overlay">
             <h1 class="ws-hero-title ws-tl-title">
                 <span class="cn">{{ if $isZh }}望境{{ else }}WangScape{{ end }}</span>
+                {{ if $isZh }}
                 <span class="en">WANGSCAPE</span>
+                {{ end }}
             </h1>
             <p class="ws-hero-line ws-tl-line">{{ $heroLine }}</p>
             <p class="ws-soul-line ws-tl-quote" data-soul-line></p>
-
-            <div class="ws-hero-actions">
-                {{ range .Translations }}
-                <a class="ws-btn ws-btn-ghost ws-tl-btn" href="{{ .Permalink }}">{{ .Language.LanguageName }}</a>
-                {{ end }}
-                <button class="ws-btn ws-tl-btn" type="button" data-home-theme-toggle>
-                    {{ if $isZh }}切换明暗{{ else }}Theme Mode{{ end }}
-                </button>
-            </div>
         </div>
     </section>
 
@@ -295,22 +297,12 @@
             filter: 'blur(0px)',
             duration: 1.35,
             ease: 'sine.out'
-        }, '+=0.15').fromTo('.ws-cinema-overlay .ws-tl-btn', {
-            opacity: 0,
-            y: 12,
-            filter: 'blur(4px)'
-        }, {
-            opacity: 1,
-            y: 0,
-            filter: 'blur(0px)',
-            duration: 0.95,
-            stagger: 0.16
-        }, '-=0.6').from('.ws-entry-card', {
+        }, '+=0.15').from('.ws-entry-card', {
             opacity: 0,
             y: 16,
             duration: 1.1,
             stagger: 0.14
-        }, '-=0.34').from('.ws-recent', {
+        }, '-=0.12').from('.ws-recent', {
             opacity: 0,
             y: 16,
             duration: 1.1

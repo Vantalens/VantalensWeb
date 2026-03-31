@@ -2663,8 +2663,7 @@ article,
 
 .wangscape-homepage .ws-cinema-overlay .ws-tl-title,
 .wangscape-homepage .ws-cinema-overlay .ws-tl-line,
-.wangscape-homepage .ws-cinema-overlay .ws-tl-quote,
-.wangscape-homepage .ws-cinema-overlay .ws-tl-btn {
+.wangscape-homepage .ws-cinema-overlay .ws-tl-quote {
     will-change: transform, opacity;
 }
 
@@ -2678,10 +2677,10 @@ article,
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 12px;
-    position: absolute;
+    position: fixed;
     top: clamp(14px, 3vh, 28px);
     right: clamp(14px, 2.8vw, 34px);
-    z-index: 6;
+    z-index: 60;
 }
 
 .wangscape-homepage .ws-hero-actions .btn,
@@ -2825,5 +2824,6 @@ article,
         top: 14px;
         right: 14px;
         gap: 8px;
+        z-index: 60;
     }
 }
