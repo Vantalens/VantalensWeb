@@ -1375,6 +1375,7 @@ article,
     border-radius: 20px;
     padding: clamp(20px, 3vw, 40px) clamp(18px, 4vw, 56px);
     background: url('../img/home-hero.png') center 25% / cover no-repeat;
+    background-attachment: fixed;
     overflow: hidden;
     box-shadow: 0 12px 30px rgba(92, 54, 72, 0.18);
 }
