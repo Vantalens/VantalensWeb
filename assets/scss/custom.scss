@@ -1192,8 +1192,22 @@ article,
     --ws-shadow: 0 18px 48px rgba(81, 51, 67, 0.18);
 }
 
+.wangscape-homepage .main-container {
+    max-width: 1320px;
+    justify-content: center;
+    gap: 0;
+    padding: 14px 16px 24px;
+}
+
+.wangscape-homepage .left-sidebar,
+.wangscape-homepage .right-sidebar {
+    display: none !important;
+}
+
 .wangscape-homepage .main {
-    max-width: 1120px;
+    max-width: 1240px;
+    min-width: 0;
+    width: 100%;
     padding: 18px 18px 42px;
 }
 
