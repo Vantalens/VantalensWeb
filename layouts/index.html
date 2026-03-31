@@ -17,24 +17,24 @@
 {{ $aboutPage := .Site.GetPage "/page/about" }}
 
 <section class="ws-home">
-    <section class="ws-hero">
-        <canvas id="sakura-canvas" class="ws-sakura-canvas" aria-hidden="true"></canvas>
-        <div class="ws-mist-layer" aria-hidden="true"></div>
-        <div class="ws-hero-overlay"></div>
+    <section class="ws-hero ws-cinema-hero">
+        <div id="ws-cinema-scene" class="ws-cinema-scene" aria-hidden="true"></div>
+        <div class="ws-cinema-mist" aria-hidden="true"></div>
+        <div class="ws-cinema-vignette" aria-hidden="true"></div>
 
-        <div class="ws-hero-content">
-            <h1 class="ws-hero-title">
+        <div class="ws-hero-content ws-cinema-overlay">
+            <h1 class="ws-hero-title title">
                 <span class="cn">{{ if $isZh }}望境{{ else }}WangScape{{ end }}</span>
                 <span class="en">WANGSCAPE</span>
             </h1>
-            <p class="ws-hero-line">{{ $heroLine }}</p>
-            <p class="ws-soul-line" data-soul-line></p>
+            <p class="ws-hero-line subtitle">{{ $heroLine }}</p>
+            <p class="ws-soul-line subtitle" data-soul-line></p>
 
             <div class="ws-hero-actions">
                 {{ range .Translations }}
-                <a class="ws-btn ws-btn-ghost" href="{{ .Permalink }}">{{ .Language.LanguageName }}</a>
+                <a class="ws-btn ws-btn-ghost btn" href="{{ .Permalink }}">{{ .Language.LanguageName }}</a>
                 {{ end }}
-                <button class="ws-btn" type="button" data-home-theme-toggle>
+                <button class="ws-btn btn" type="button" data-home-theme-toggle>
                     {{ if $isZh }}切换明暗{{ else }}Theme Mode{{ end }}
                 </button>
             </div>
@@ -86,87 +86,213 @@
     {{ partial "footer/footer" . }}
 </section>
 
+<script src="https://unpkg.com/three@0.161.0/build/three.min.js"></script>
+<script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
 <script>
-// Hero Canvas Sakura + Theme Toggle
+// Cinematic scene + timeline + theme toggle
 (function () {
     var soulLine = document.querySelector('[data-soul-line]');
     if (soulLine) {
         var quotes = [
             '人间忽晚，山河已秋',
-            '夜来风雨声，花落知多少'
+            '夜来风雨声，花落知多少',
+            '风定落花深，帘外拥红堆雪'
         ];
         soulLine.textContent = quotes[Math.floor(Math.random() * quotes.length)];
     }
 
-    var canvas = document.getElementById('sakura-canvas');
-    if (canvas) {
-        var ctx = canvas.getContext('2d');
-        var petals = [];
-        var maxPetals = 28;
+    var sceneEl = document.getElementById('ws-cinema-scene');
+    var hasThree = typeof window.THREE !== 'undefined';
+    var hasGSAP = typeof window.gsap !== 'undefined';
 
-        function resizeCanvas() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+    function initScene() {
+        if (!sceneEl || !hasThree) return;
+
+        var THREE = window.THREE;
+        var scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0xf7c6c7, 0.15);
+
+        var camera = new THREE.PerspectiveCamera(55, 1, 0.1, 50);
+        camera.position.set(0, 0.5, 6);
+
+        var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(sceneEl.clientWidth, sceneEl.clientHeight);
+        renderer.setClearColor(0x000000, 0);
+        sceneEl.appendChild(renderer.domElement);
+
+        var bgMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 }
+            },
+            vertexShader: [
+                'varying vec2 vUv;',
+                'void main() {',
+                '  vUv = uv;',
+                '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+                '}'
+            ].join('\n'),
+            fragmentShader: [
+                'uniform float uTime;',
+                'varying vec2 vUv;',
+                'void main() {',
+                '  vec3 top = vec3(0.97, 0.78, 0.79);',
+                '  vec3 bottom = vec3(0.88, 0.70, 0.75);',
+                '  vec3 color = mix(top, bottom, vUv.y);',
+                '  color *= 0.95 + 0.05 * sin(uTime * 0.35);',
+                '  gl_FragColor = vec4(color, 0.96);',
+                '}'
+            ].join('\n'),
+            depthWrite: false,
+            depthTest: false
+        });
+
+        var bg = new THREE.Mesh(new THREE.PlaneGeometry(24, 14), bgMaterial);
+        bg.position.set(0, 0, -8);
+        scene.add(bg);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.82));
+        var keyLight = new THREE.DirectionalLight(0xffd4da, 0.7);
+        keyLight.position.set(2, 3, 4);
+        scene.add(keyLight);
+
+        var petalCount = 1200;
+        var petalGeo = new THREE.PlaneGeometry(0.1, 0.16);
+        var petalMat = new THREE.MeshBasicMaterial({
+            color: 0xf7c7d6,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+        var petals = new THREE.InstancedMesh(petalGeo, petalMat, petalCount);
+        scene.add(petals);
+
+        var dummy = new THREE.Object3D();
+        var particles = new Array(petalCount);
+
+        function wind(x, y, t) {
+            return Math.sin(x * 0.3 + t + y * 0.08) * 0.2;
         }
 
-        function createPetal(initialY) {
-            return {
-                x: Math.random() * canvas.width,
-                y: initialY != null ? initialY : -20,
-                depth: Math.random() * 0.8 + 0.5,
-                size: Math.random() * 6 + 4,
-                speedY: Math.random() * 0.45 + 0.2,
-                sway: Math.random() * 0.65 + 0.18,
-                swayOffset: Math.random() * Math.PI * 2,
-                rotate: Math.random() * Math.PI,
-                rotateSpeed: (Math.random() - 0.5) * 0.01,
-                alpha: Math.random() * 0.22 + 0.42
+        function resetPetal(i, topSpawn) {
+            particles[i] = {
+                x: (Math.random() - 0.5) * 11,
+                y: topSpawn ? (Math.random() * 2 + 3.6) : ((Math.random() - 0.5) * 7),
+                z: (Math.random() - 0.5) * 8,
+                vx: (Math.random() - 0.5) * 0.004,
+                vy: Math.random() * 0.012 + 0.004,
+                rotation: Math.random() * Math.PI * 2,
+                life: Math.random() * 1.2 + 0.2,
+                scale: Math.random() * 1.15 + 0.7
             };
         }
 
-        function drawPetal(p) {
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.rotate);
-            ctx.globalAlpha = p.alpha;
-            ctx.fillStyle = '#f8cfdd';
-            ctx.beginPath();
-            ctx.moveTo(0, -p.size * 0.7);
-            ctx.bezierCurveTo(p.size * 0.95, -p.size * 0.6, p.size * 0.9, p.size * 0.45, 0, p.size * 0.85);
-            ctx.bezierCurveTo(-p.size * 0.9, p.size * 0.45, -p.size * 0.95, -p.size * 0.6, 0, -p.size * 0.7);
-            ctx.fill();
-            ctx.restore();
+        for (var i = 0; i < petalCount; i++) {
+            resetPetal(i, false);
         }
 
-        function tick() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        function updatePetals(t) {
+            for (var i = 0; i < petalCount; i++) {
+                var p = particles[i];
+                p.y -= p.vy;
+                p.x += p.vx + wind(p.x, p.y, t) * 0.008;
+                p.rotation += 0.01;
+                p.life -= 0.0026;
 
-            if (petals.length < maxPetals) {
-                petals.push(createPetal(-20));
-            }
-
-            for (var i = petals.length - 1; i >= 0; i--) {
-                var p = petals[i];
-                p.y += p.speedY;
-                p.x += Math.sin((p.y / 60) + p.swayOffset) * p.sway;
-                p.rotate += p.rotateSpeed;
-
-                if (p.y > canvas.height + 30 || p.x < -30 || p.x > canvas.width + 30) {
-                    petals[i] = createPetal(-20);
-                    continue;
+                if (p.y < -4.2 || p.life <= 0 || Math.abs(p.x) > 7.5) {
+                    resetPetal(i, true);
+                    p = particles[i];
                 }
-                drawPetal(p);
+
+                dummy.position.set(p.x, p.y, p.z);
+                dummy.rotation.set(0.2 * Math.sin(p.rotation * 0.45), p.rotation, 0.2 * Math.cos(p.rotation * 0.3));
+                dummy.scale.setScalar(p.scale);
+                dummy.updateMatrix();
+                petals.setMatrixAt(i, dummy.matrix);
             }
-            requestAnimationFrame(tick);
+            petals.instanceMatrix.needsUpdate = true;
         }
 
-        resizeCanvas();
-        for (var i = 0; i < maxPetals; i++) {
-            petals.push(createPetal(Math.random() * canvas.height));
+        function resize() {
+            if (!sceneEl) return;
+            var width = sceneEl.clientWidth;
+            var height = sceneEl.clientHeight;
+            if (!width || !height) return;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
         }
-        window.addEventListener('resize', resizeCanvas);
-        requestAnimationFrame(tick);
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        if (hasGSAP) {
+            window.gsap.to(camera.position, {
+                z: 4,
+                duration: 6,
+                ease: 'power2.inOut'
+            });
+
+            window.gsap.to(camera.position, {
+                y: 0.6,
+                duration: 4,
+                repeat: -1,
+                yoyo: true,
+                ease: 'sine.inOut'
+            });
+        }
+
+        document.addEventListener('mousemove', function (e) {
+            var tx = (e.clientX / window.innerWidth - 0.5) * 0.18;
+            var ty = (e.clientY / window.innerHeight - 0.5) * 0.12;
+            camera.position.x += (tx - camera.position.x) * 0.03;
+            camera.lookAt(0, ty, 0);
+        });
+
+        function render(time) {
+            var t = time * 0.001;
+            bgMaterial.uniforms.uTime.value = t;
+            updatePetals(t);
+            renderer.render(scene, camera);
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
     }
+
+    function initTimeline() {
+        if (!hasGSAP) return;
+
+        var tl = window.gsap.timeline({ defaults: { ease: 'power3.out' } });
+        tl.from('.ws-cinema-overlay .title', {
+            opacity: 0,
+            y: 60,
+            duration: 2
+        }).from('.ws-cinema-overlay .subtitle', {
+            opacity: 0,
+            y: 30,
+            duration: 1.5,
+            stagger: 0.2
+        }, '-=1.5').from('.ws-cinema-overlay .btn', {
+            opacity: 0,
+            y: 16,
+            duration: 1.5,
+            stagger: 0.3
+        }, '-=1.0').from('.ws-entry-card', {
+            opacity: 0,
+            y: 20,
+            duration: 1.6,
+            stagger: 0.2
+        }, '-=0.8').from('.ws-recent', {
+            opacity: 0,
+            y: 24,
+            duration: 1.8
+        }, '-=1.2');
+    }
+
+    initScene();
+    initTimeline();
 
     var heroContent = document.querySelector('.ws-hero-content');
     document.addEventListener('mousemove', function (e) {
