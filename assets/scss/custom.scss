@@ -1193,10 +1193,10 @@ article,
 }
 
 .wangscape-homepage .main-container {
-    max-width: 1320px;
+    max-width: 100%;
     justify-content: center;
     gap: 0;
-    padding: 14px 16px 24px;
+    padding: 0;
 }
 
 .wangscape-homepage .left-sidebar,
@@ -1205,15 +1205,15 @@ article,
 }
 
 .wangscape-homepage .main {
-    max-width: 1240px;
+    max-width: 100%;
     min-width: 0;
     width: 100%;
-    padding: 18px 18px 42px;
+    padding: 0;
 }
 
 .wangscape-homepage .ws-home {
     display: grid;
-    gap: clamp(18px, 2vw, 24px);
+    gap: 0;
     animation: wsFadeIn 0.8s ease;
 }
 
@@ -1221,11 +1221,11 @@ article,
     position: relative;
     isolation: isolate;
     min-height: clamp(340px, 48vh, 560px);
-    border-radius: 28px;
-    padding: clamp(22px, 3.5vw, 40px);
+    border-radius: 0;
+    padding: clamp(24px, 3.6vw, 54px) clamp(18px, 4vw, 56px);
     background: url('/img/home-hero.png') center 25% / cover no-repeat;
     overflow: hidden;
-    box-shadow: var(--ws-shadow);
+    box-shadow: none;
 }
 
 .wangscape-homepage .ws-hero-overlay {
@@ -1305,23 +1305,23 @@ article,
 .wangscape-homepage .ws-entry-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: clamp(10px, 1.5vw, 14px);
+    gap: 0;
 }
 
 .wangscape-homepage .ws-entry-card {
-    border-radius: 20px;
-    border: 1px solid var(--ws-border);
-    background: linear-gradient(150deg, rgba(255, 248, 251, 0.8), rgba(255, 240, 245, 0.55));
-    box-shadow: 0 10px 32px rgba(120, 75, 95, 0.11);
-    padding: clamp(14px, 2vw, 18px);
+    border-radius: 0;
+    border: none;
+    background: linear-gradient(150deg, rgba(255, 246, 250, 0.76), rgba(255, 231, 242, 0.72));
+    box-shadow: none;
+    padding: clamp(18px, 2vw, 24px);
     text-decoration: none;
     color: var(--ws-ink);
     transition: transform 0.24s ease, box-shadow 0.24s ease;
 }
 
 .wangscape-homepage .ws-entry-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 15px 30px rgba(120, 75, 95, 0.2);
+    transform: translateY(-2px);
+    box-shadow: none;
 }
 
 .wangscape-homepage .ws-entry-card h3 {
@@ -1340,21 +1340,23 @@ article,
 .wangscape-homepage .ws-about-link-wrap {
     display: flex;
     justify-content: center;
+    padding: 20px 0 12px;
 }
 
 .wangscape-homepage .ws-about-link {
     text-decoration: none;
     color: #57384a;
-    border-bottom: 1px dashed rgba(87, 56, 74, 0.4);
-    padding-bottom: 2px;
+    border-bottom: none;
+    padding-bottom: 0;
+    letter-spacing: 0.04em;
 }
 
 .wangscape-homepage .ws-recent {
-    border-radius: 24px;
-    border: 1px solid var(--ws-border);
-    background: var(--ws-glass);
-    box-shadow: var(--ws-shadow);
-    padding: clamp(16px, 2vw, 22px);
+    border-radius: 0;
+    border: none;
+    background: linear-gradient(160deg, rgba(255, 245, 249, 0.78), rgba(248, 217, 233, 0.72));
+    box-shadow: none;
+    padding: clamp(20px, 2.2vw, 30px);
 }
 
 .wangscape-homepage .ws-recent-head {
@@ -1384,9 +1386,9 @@ article,
 }
 
 .wangscape-homepage .ws-post-card {
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.62);
-    background: rgba(255, 255, 255, 0.52);
+    border-radius: 8px;
+    border: none;
+    background: rgba(255, 245, 250, 0.74);
 }
 
 .wangscape-homepage .ws-post-card a {
@@ -1526,14 +1528,14 @@ article,
 
 @media screen and (max-width: 680px) {
     .wangscape-homepage .main {
-        padding-left: 10px;
-        padding-right: 10px;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .wangscape-homepage .ws-hero {
         min-height: 360px;
         padding: 16px;
-        border-radius: 20px;
+        border-radius: 0;
         background-position: center 20%;
     }
 
@@ -2104,4 +2106,58 @@ article,
 [data-scheme="dark"] .ws-global-petals span {
     background: linear-gradient(135deg, #e8a5c3 0%, #d96a9a 50%, #c97191 100%);
     opacity: 0.65;
+}
+
+/* ===== About 与友链空状态 ===== */
+.ws-about-page .main {
+    max-width: 900px;
+    min-width: 0;
+    width: 100%;
+}
+
+.ws-about-wrap {
+    padding: 32px 24px;
+    background: linear-gradient(165deg, rgba(255, 244, 249, 0.78), rgba(247, 205, 224, 0.66));
+    animation: wsFadeIn 0.7s ease;
+}
+
+.ws-about-header h1 {
+    margin: 0 0 18px;
+    font-size: 2rem;
+    color: #523446;
+}
+
+.ws-about-content {
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: #523a4a;
+}
+
+.ws-empty-state {
+    text-align: center;
+    padding: 36px 20px;
+    background: linear-gradient(160deg, rgba(255, 245, 250, 0.84), rgba(248, 218, 233, 0.74));
+}
+
+.ws-empty-state h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #5b3549;
+}
+
+.ws-empty-state p {
+    margin: 10px 0 0;
+    color: #7d5a6c;
+}
+
+[data-scheme="dark"] .ws-about-wrap,
+[data-scheme="dark"] .ws-empty-state {
+    background: linear-gradient(160deg, rgba(39, 31, 41, 0.85), rgba(58, 38, 53, 0.74));
+}
+
+[data-scheme="dark"] .ws-about-header h1,
+[data-scheme="dark"] .ws-about-content,
+[data-scheme="dark"] .ws-empty-state h3,
+[data-scheme="dark"] .ws-empty-state p {
+    color: #f1dce8;
 }

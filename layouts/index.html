@@ -8,7 +8,6 @@
 {{ $isZh := eq .Site.Language.Lang "zh-cn" }}
 {{ $heroTitle := cond $isZh "望境 WangScape" "WangScape" }}
 {{ $heroLine := cond $isZh "偏我去时花满楼，偏我来时不逢春" "When I left, flowers filled the tower. When I returned, spring was gone." }}
-{{ $heroDesc := cond $isZh "一个以诗意表达为优先的个人数字空间" "A poetic digital space where expression comes first." }}
 {{ $pages := where .Site.RegularPages "Type" "in" .Site.Params.mainSections }}
 {{ $filtered := where $pages "Params.hidden" "!=" true }}
 {{ $recent := first 6 ($filtered.ByDate.Reverse) }}
@@ -21,10 +20,8 @@
         </div>
 
         <div class="ws-hero-content">
-            <p class="ws-hero-kicker">Sakura Poetic Theme</p>
             <h1>{{ $heroTitle }}</h1>
             <p class="ws-hero-line">{{ $heroLine }}</p>
-            <p class="ws-hero-desc">{{ $heroDesc }}</p>
 
             <div class="ws-hero-actions">
                 {{ range .Translations }}

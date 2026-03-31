@@ -1,0 +1,15 @@
+{{ define "body-class" }}article-page ws-about-page{{ end }}
+
+{{ define "main" }}
+<section class="ws-about-wrap">
+    <header class="ws-about-header">
+        <h1>{{ .Title }}</h1>
+    </header>
+
+    <article class="ws-about-content article-content">
+        {{ .Content }}
+    </article>
+</section>
+
+{{ partialCached "footer/footer" . }}
+{{ end }}

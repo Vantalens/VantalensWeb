@@ -1,0 +1,37 @@
+{{ if gt (len .Params.links) 0 }}
+<div class="article-list--compact links">
+    {{ range $i, $link := .Params.links }}
+        <article>
+            <a href="{{ $link.website }}" target="_blank" rel="noopener">
+                <div class="article-details">
+                    <h2 class="article-title">
+                        {{- $link.title -}}
+                    </h2>
+                    <footer class="article-time">
+                        {{ with $link.description }}
+                            {{ . }}
+                        {{ else }}
+                            {{ $link.website }}
+                        {{ end }}
+                    </footer>
+                </div>
+
+                {{ with $link.image }}
+                    {{ $permalink := . }}
+                    {{ with ($.Resources.GetMatch (printf "%s" (. | safeURL))) }}
+                        {{ $permalink = .RelPermalink }}
+                    {{ end }}
+                    <div class="article-image">
+                        <img src="{{ $permalink }}" loading="lazy"{{ with $link.alt }} alt="{{ . }}"{{ end }}>
+                    </div>
+                {{ end }}
+            </a>
+        </article>
+    {{ end }}
+</div>
+{{ else }}
+<div class="ws-empty-state">
+    <h3>{{ if eq .Site.Language.Lang "zh-cn" }}友链筹备中{{ else }}Links in Progress{{ end }}</h3>
+    <p>{{ if eq .Site.Language.Lang "zh-cn" }}正在整理值得推荐的站点，稍后会在这里更新。{{ else }}Curating meaningful sites. This section will be updated soon.{{ end }}</p>
+</div>
+{{ end }}
