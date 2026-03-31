@@ -179,6 +179,18 @@
                 href="https://w2343419-del.github.io/WangScape/archives/"
                 />
   </url><url>
+    <loc>https://w2343419-del.github.io/WangScape/about/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://w2343419-del.github.io/WangScape/en/about/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en-us"
+                href="https://w2343419-del.github.io/WangScape/about/"
+                />
+  </url><url>
     <loc>https://w2343419-del.github.io/WangScape/search/</loc>
     <xhtml:link
                 rel="alternate"

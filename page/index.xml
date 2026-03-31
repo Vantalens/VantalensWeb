@@ -15,6 +15,17 @@
         <description></description>
         </item>
         <item>
+        <title>关于</title>
+        <link>https://w2343419-del.github.io/WangScape/about/</link>
+        <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+        
+        <guid>https://w2343419-del.github.io/WangScape/about/</guid>
+        <description>&lt;p&gt;望境 WangScape 是一个以诗意表达为核心的个人数字空间。&lt;/p&gt;
+&lt;p&gt;这里记录算法、思考与日常灵感，也保留文字的温度与节奏。&lt;/p&gt;
+&lt;p&gt;技术栈：Hugo、Go、JavaScript、SCSS。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>搜索</title>
         <link>https://w2343419-del.github.io/WangScape/search/</link>
         <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

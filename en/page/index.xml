@@ -15,6 +15,17 @@
         <description></description>
         </item>
         <item>
+        <title>About</title>
+        <link>https://w2343419-del.github.io/WangScape/en/about/</link>
+        <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+        
+        <guid>https://w2343419-del.github.io/WangScape/en/about/</guid>
+        <description>&lt;p&gt;WangScape is a personal digital space centered on poetic expression.&lt;/p&gt;
+&lt;p&gt;It keeps algorithms, notes, and daily sparks in one quiet place.&lt;/p&gt;
+&lt;p&gt;Tech stack: Hugo, Go, JavaScript, SCSS.&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>Links</title>
         <link>https://w2343419-del.github.io/WangScape/en/links/</link>
         <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
