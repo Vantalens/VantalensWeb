@@ -1127,7 +1127,7 @@ body,
 
 .article-content h1,
 .article-page h1 {
-    font-size: clamp(1.85rem, 2.6vw, 2.4rem);
+    font-size: clamp(1.62rem, 2.2vw, 2.05rem);
 }
 
 .article-content h2,
@@ -1154,7 +1154,13 @@ body,
 
 .article-list .article-title,
 .article-list h2 {
-    font-size: clamp(1.24rem, 1.7vw, 1.52rem);
+    font-size: clamp(1.12rem, 1.45vw, 1.34rem);
+}
+
+.article-page .article-title,
+.article-page .article-header .article-title {
+    font-size: clamp(1.9rem, 2.7vw, 2.35rem);
+    line-height: 1.22;
 }
 
 .article-list .article-time,
@@ -1695,7 +1701,7 @@ article,
 }
 
 .article-page .article-content h1 {
-    font-size: 2.2rem;
+    font-size: 1.95rem;
     margin-top: 1.4em;
     margin-bottom: 0.6em;
     line-height: 1.2;
