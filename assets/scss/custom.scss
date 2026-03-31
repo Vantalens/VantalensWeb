@@ -1178,6 +1178,30 @@ body,
     font-size: 0.98rem;
 }
 
+.main.full-width > header .section-title {
+    font-size: 1.28rem;
+}
+
+.main.full-width > header .section-term {
+    font-size: clamp(1.62rem, 2.1vw, 1.92rem);
+    line-height: 1.2;
+}
+
+.main.full-width > header .section-count {
+    font-size: 0.98rem;
+}
+
+.article-list--compact .article-title,
+.article-list--compact article .article-title {
+    font-size: clamp(1.18rem, 1.45vw, 1.34rem) !important;
+    line-height: 1.35;
+}
+
+.article-list--compact .article-time,
+.article-list--compact .article-time time {
+    font-size: 0.92rem !important;
+}
+
 @media screen and (max-width: 900px) {
     html {
         font-size: 16px;
