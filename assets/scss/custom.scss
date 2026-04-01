@@ -32,24 +32,24 @@
 @keyframes globalPetalFall {
     0% {
         top: -8%;
-        opacity: 0.2;
+        opacity: 0.24;
         transform: translateX(0) rotate(0deg);
-        filter: blur(2.2px);
+        filter: blur(1.8px);
     }
 
     15% {
-        opacity: 0.35;
-        filter: blur(1.8px);
+        opacity: 0.42;
+        filter: blur(1.4px);
     }
 
     50% {
-        opacity: 0.32;
-        filter: blur(1.8px);
+        opacity: 0.4;
+        filter: blur(1.3px);
     }
 
     85% {
-        opacity: 0.15;
-        filter: blur(2px);
+        opacity: 0.2;
+        filter: blur(1.6px);
     }
 
     100% {
@@ -106,8 +106,8 @@ body::before {
     height: 10px;
     border-radius: 100% 0% 100% 70% / 60% 100% 30% 70%;
     background: linear-gradient(135deg, #f8d7e4 0%, #ffd1dc 50%, #f8bbd0 100%);
-    opacity: 0.35;
-    filter: blur(1.8px);
+    opacity: 0.42;
+    filter: blur(1.4px);
     will-change: transform;
 }
 
