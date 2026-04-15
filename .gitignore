@@ -1,92 +1,49 @@
-# Hugo 生成文件
+# Vantalens .gitignore
+
+# Hugo generated
 public/
-public_*/
 resources/
 .hugo_build.lock
 
-# 临时文件
-temp.html
-temp2.html
-temp_output.html
-
-# 测试文件夹
---bind/
-bin/
-bin/*.exe
-theme/
-
-# Go 工具链（不应提交到版本库）
-.tools/go/
-
-# 系统文件
-.DS_Store
-Thumbs.db
-.DS_Store?
-*.swp
-*.swo
-*~
-
-# 敏感配置文件
-.env
-.env.local
-.env.*.local
-config/comment_settings.json
-config/_default/comment_settings.json
-comments.json
-**/comments.json
-config/*.log
-config/**/*.log
-
-# 编译文件
-WSwriter.exe
+# Binaries (do not upload)
 *.exe
 *.dll
-*.so
-*.dylib
-*.o
+bin/
+.tools/
+
+# Logs
+*.log
+
+# Sensitive config (do not upload)
+.env
+.env.*
+config/comment_settings.json
+**/comments.json
+config/_default/comment_settings.json
+
+# System
+.DS_Store
+Thumbs.db
+*.swp
+*~
 
 # IDE
 .idea/
 .vscode/
-*.swp
-*.swo
-vscode-settings.json
 
-# 日志文件
-server-error.log
-server-output.log
-*.log
-*.log.json
-logs/
-error.log
-debug.log
-
-# 备份和临时文件
-*.exe~
-*.bak
-test-*.ps1
-诊断报告.md
-_断断报告.md
+# Temp
 *.tmp
-*.bak.js
+*.bak
 
-# 包管理器
-node_modules/
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# Go 相关
+# Go cache
+.go-cache/
 vendor/
-go.sum
 
-# 构建输出
-dist/
+# Theme (downloaded, not uploaded)
+themes/stack/
+
+# Build output
 build/
+dist/
 out/
-
-# 编辑器备份
-*~
-*.swp
-*.swo
-.~*
+tools/hugo/
