@@ -16,11 +16,11 @@
 {{ $linksPage := .Site.GetPage "/page/links" }}
 
 <section class="ws-home">
-    <section class="ws-hero ws-cinema-hero">
+    <section class="ws-hero ws-cinema-hero" data-cinema-hero>
         <div id="ws-cinema-scene" class="ws-cinema-scene" aria-hidden="true"></div>
         <div class="ws-cinema-mist" aria-hidden="true"></div>
         <div class="ws-cinema-vignette" aria-hidden="true"></div>
-        <div class="ws-hero-actions">
+        <div class="ws-hero-actions ws-motion-reveal ws-motion-reveal--rise is-visible" style="--reveal-delay: 0.08s;">
             {{ range .Translations }}
             <a class="ws-btn ws-btn-ghost" href="{{ .RelPermalink }}">{{ .Language.LanguageName }}</a>
             {{ end }}
@@ -30,35 +30,35 @@
         </div>
 
         <div class="ws-hero-content ws-cinema-overlay">
-            <h1 class="ws-hero-title ws-tl-title">
+            <h1 class="ws-hero-title ws-tl-title ws-motion-reveal ws-motion-reveal--hero is-visible" style="--reveal-delay: 0.12s;">
                 <span class="cn">Vantalens</span>
                 <span class="en">VANTALENS</span>
             </h1>
-            <p class="ws-hero-line ws-tl-line">{{ $heroLine }}</p>
-            <p class="ws-soul-line ws-tl-quote" data-soul-line></p>
+            <p class="ws-hero-line ws-tl-line ws-motion-reveal ws-motion-reveal--rise is-visible" style="--reveal-delay: 0.24s;">{{ $heroLine }}</p>
+            <p class="ws-soul-line ws-tl-quote ws-motion-reveal ws-motion-reveal--rise is-visible" data-soul-line style="--reveal-delay: 0.36s;"></p>
         </div>
     </section>
 
     <section class="ws-entry-grid" aria-label="Main Sections">
-        <a class="ws-entry-card" href="{{ "/post/" | relURL }}">
+        <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/post/" | relURL }}" data-reveal style="--reveal-delay: 0.02s;">
             <h3>{{ if $isZh }}文章{{ else }}Posts{{ end }}</h3>
             <p>{{ if $isZh }}最近：{{ else }}Recent: {{ end }}{{ with index $recent 0 }}{{ .Title }}{{ else }}{{ if $isZh }}暂无文章{{ else }}No posts yet{{ end }}{{ end }}</p>
         </a>
-        <a class="ws-entry-card" href="{{ "/search/" | relURL }}">
+        <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/search/" | relURL }}" data-reveal style="--reveal-delay: 0.08s;">
             <h3>{{ if $isZh }}搜索{{ else }}Search{{ end }}</h3>
             <p>{{ if $isZh }}标题、标签、摘要一键检索{{ else }}Find by title, tags, and snippets{{ end }}</p>
         </a>
-        <a class="ws-entry-card" href="{{ "/archives/" | relURL }}">
+        <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/archives/" | relURL }}" data-reveal style="--reveal-delay: 0.14s;">
             <h3>{{ if $isZh }}归档{{ else }}Archive{{ end }}</h3>
             <p>{{ if $isZh }}沿时间线回看写作轨迹{{ else }}Read along a timeline of writing{{ end }}</p>
         </a>
-        <a class="ws-entry-card" href="{{ "/links/" | relURL }}">
+        <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/links/" | relURL }}" data-reveal style="--reveal-delay: 0.2s;">
             <h3>{{ if $isZh }}友链{{ else }}Friends{{ end }}</h3>
             <p>{{ if $isZh }}同频站点与长期收藏{{ else }}Resonant sites and long-term picks{{ end }}</p>
         </a>
     </section>
 
-    <section class="ws-recent">
+    <section class="ws-recent ws-motion-reveal ws-motion-reveal--rise" data-reveal style="--reveal-delay: 0.08s;">
         <div class="ws-recent-head">
             <h2>{{ if $isZh }}最近更新{{ else }}Recent Writings{{ end }}</h2>
             <a href="{{ "/post/" | relURL }}">{{ if $isZh }}查看全部{{ else }}View all{{ end }}</a>
@@ -66,7 +66,7 @@
 
         <div class="ws-recent-grid">
             {{ range $recent }}
-            <article class="ws-post-card">
+            <article class="ws-post-card ws-motion-reveal ws-motion-reveal--rise" data-reveal>
                 <a href="{{ .RelPermalink }}">
                     <h3>{{ .Title }}</h3>
                     <div class="ws-post-summary">{{ .Description | default (.Summary | plainify | truncate 120) }}</div>
@@ -82,6 +82,8 @@
 <script>
 // Cinematic scene + timeline + theme toggle
 (function () {
+    var mediaQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    var prefersReducedMotion = mediaQuery ? mediaQuery.matches : false;
     var soulLine = document.querySelector('[data-soul-line]');
     if (soulLine) {
         var quotes = [
@@ -99,11 +101,42 @@
     }
 
     var sceneEl = document.getElementById('ws-cinema-scene');
+    var heroEl = document.querySelector('[data-cinema-hero]');
     var hasThree = typeof window.THREE !== 'undefined';
     var hasGSAP = typeof window.gsap !== 'undefined';
 
+    function initRevealMotion() {
+        var items = Array.prototype.slice.call(document.querySelectorAll('[data-reveal]'));
+        if (!items.length) return;
+
+        if (prefersReducedMotion || typeof window.IntersectionObserver === 'undefined') {
+            items.forEach(function (item) {
+                item.classList.add('is-visible');
+            });
+            return;
+        }
+
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            });
+        }, {
+            threshold: 0.14,
+            rootMargin: '0px 0px -8% 0px'
+        });
+
+        items.forEach(function (item, index) {
+            if (!item.style.getPropertyValue('--reveal-delay')) {
+                item.style.setProperty('--reveal-delay', String(index * 0.06) + 's');
+            }
+            observer.observe(item);
+        });
+    }
+
     function initScene() {
-        if (!sceneEl || !hasThree) return;
+        if (!sceneEl || !hasThree || prefersReducedMotion) return;
 
         var THREE = window.THREE;
         var scene = new THREE.Scene();
@@ -153,7 +186,8 @@
         keyLight.position.set(2, 3, 4);
         scene.add(keyLight);
 
-        var petalCount = 1200;
+        var viewportWidth = window.innerWidth || 1280;
+        var petalCount = viewportWidth < 700 ? 260 : (viewportWidth < 1080 ? 520 : 820);
         var petalGeo = new THREE.PlaneGeometry(0.1, 0.16);
         var petalMat = new THREE.MeshBasicMaterial({
             color: 0xf7c7d6,
@@ -211,6 +245,11 @@
             petals.instanceMatrix.needsUpdate = true;
         }
 
+        var animationFrameId = 0;
+        var isActive = true;
+        var targetCameraX = camera.position.x;
+        var targetCameraY = camera.position.y;
+
         function resize() {
             if (!sceneEl) return;
             var width = sceneEl.clientWidth;
@@ -221,8 +260,50 @@
             renderer.setSize(width, height);
         }
 
-        window.addEventListener('resize', resize);
+        function setActive(next) {
+            isActive = !!next;
+            if (isActive && !animationFrameId) {
+                animationFrameId = requestAnimationFrame(render);
+            }
+        }
+
+        function handleVisibilityChange() {
+            setActive(!document.hidden);
+        }
+
+        function handlePointerMove(event) {
+            if (!heroEl) return;
+            var rect = heroEl.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            var x = ((event.clientX - rect.left) / rect.width) - 0.5;
+            var y = ((event.clientY - rect.top) / rect.height) - 0.5;
+            targetCameraX = x * 0.38;
+            targetCameraY = 0.5 - y * 0.28;
+        }
+
+        function handlePointerLeave() {
+            targetCameraX = 0;
+            targetCameraY = 0.5;
+        }
+
+        window.addEventListener('resize', resize, { passive: true });
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        if (heroEl) {
+            heroEl.addEventListener('pointermove', handlePointerMove, { passive: true });
+            heroEl.addEventListener('pointerleave', handlePointerLeave, { passive: true });
+        }
         resize();
+
+        if (typeof window.IntersectionObserver !== 'undefined' && heroEl) {
+            var heroObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    setActive(entry.isIntersecting && !document.hidden);
+                });
+            }, {
+                threshold: 0.08
+            });
+            heroObserver.observe(heroEl);
+        }
 
         if (hasGSAP) {
             window.gsap.to(camera.position, {
@@ -233,18 +314,25 @@
         }
 
         function render(time) {
+            if (!isActive) {
+                animationFrameId = 0;
+                return;
+            }
             var t = time * 0.001;
             bgMaterial.uniforms.uTime.value = t;
+            camera.position.x += (targetCameraX - camera.position.x) * 0.035;
+            camera.position.y += (targetCameraY - camera.position.y) * 0.035;
+            camera.lookAt(0, 0.2, 0);
             updatePetals(t);
             renderer.render(scene, camera);
-            requestAnimationFrame(render);
+            animationFrameId = requestAnimationFrame(render);
         }
 
-        requestAnimationFrame(render);
+        animationFrameId = requestAnimationFrame(render);
     }
 
     function initTimeline() {
-        if (!hasGSAP) return;
+        if (!hasGSAP || prefersReducedMotion) return;
 
         var tl = window.gsap.timeline({ defaults: { ease: 'power3.out' } });
         tl.fromTo('.ws-cinema-overlay .ws-tl-title', {
@@ -277,18 +365,10 @@
             filter: 'blur(0px)',
             duration: 1.35,
             ease: 'sine.out'
-        }, '+=0.15').from('.ws-entry-card', {
-            opacity: 0,
-            y: 16,
-            duration: 1.1,
-            stagger: 0.14
-        }, '-=0.12').from('.ws-recent', {
-            opacity: 0,
-            y: 16,
-            duration: 1.1
-        }, '-=0.68');
+        }, '+=0.15');
     }
 
+    initRevealMotion();
     initScene();
     initTimeline();
 

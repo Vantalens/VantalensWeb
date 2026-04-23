@@ -1,5 +1,5 @@
-# Change baseurl before deploy
-baseurl = "https://vantalens.github.io/VantalensWeb/"
+# Production domain
+baseurl = "https://vantalens.com/"
 theme = "stack"
 languageCode = "en-us"
 title = "Vantalens"
@@ -16,4 +16,3 @@ path = 'page'
 [minify]
   disableXML = true
   minifyOutput = true
-

@@ -1,25 +1,21 @@
 <!-- 点击文章卡片进入阅读 -->
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.article-list article').forEach(function (article) {
-            article.addEventListener('click', function (e) {
-                // 如果点击的是链接，不处理
-                if (e.target.tagName === 'A' || e.target.closest('a')) {
-                    return;
-                }
-                // 找到文章标题链接并跳转
-                const link = article.querySelector('.article-title a');
-                if (link) {
-                    window.location.href = link.href;
-                }
-            });
-        });
+    document.addEventListener('click', function (event) {
+        var article = event.target.closest('.article-list article');
+        if (!article || event.target.closest('a, button, input, textarea, select, summary')) {
+            return;
+        }
+
+        var link = article.querySelector('.article-title a');
+        if (link) {
+            window.location.href = link.href;
+        }
     });
 </script>
 
 
 <!-- 分页增强功能 -->
-<script src="{{ "js/pagination-enhanced.js" | relURL }}"></script>
+<script defer src="{{ "js/pagination-enhanced.js" | relURL }}"></script>
 
 <!-- 超级简单换页系统 -->
-<script src="{{ "js/ultra-simple-paginator.js" | relURL }}"></script>
+<script defer src="{{ "js/ultra-simple-paginator.js" | relURL }}"></script>
