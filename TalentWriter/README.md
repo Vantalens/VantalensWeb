@@ -1,27 +1,20 @@
 # TalentWriter
 
-TalentWriter is the local management tool for Vantalens. The normal workflow uses one unified launcher, `web`, which provides both the control page and the writer page. Split services are still available for debugging.
+TalentWriter is the local management tool for Vantalens. The normal Windows workflow uses one unified launcher, `web.exe`, which provides both the control page and the writer page. Split services are still available through `go run` for debugging, but they should not be built as separate exe files for daily use.
 
 ## Build
 
 ```bash
-go build -o web ./cmd/server
-```
-
-Optional service builds:
-
-```bash
-go build -o control ./cmd/control
-go build -o writer ./cmd/writer
+go build -o web.exe ./cmd/server
 ```
 
 ## Run
 
 ```bash
-HUGO_PATH=/path/to/hugo ADMIN_TOKEN=your-token ./web
+HUGO_PATH=/path/to/hugo ADMIN_TOKEN=your-token ./web.exe
 ```
 
-`web` provides both the control and writer views.
+`web.exe` provides both the control and writer views.
 
 ## Optional Debug Mode
 

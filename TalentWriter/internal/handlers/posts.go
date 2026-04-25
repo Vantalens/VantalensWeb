@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,12 +11,17 @@ import (
 	"time"
 	"unicode"
 
+	"vantalens/talentwriter/internal/article"
 	"vantalens/talentwriter/internal/auth"
 	"vantalens/talentwriter/internal/config"
 	"vantalens/talentwriter/internal/models"
 )
 
 func HandleGetPosts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})
+		return
+	}
 	if !auth.RequireAuth(w, r) {
 		return
 	}
@@ -25,6 +29,10 @@ func HandleGetPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleGetContent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})
+		return
+	}
 	if !auth.RequireAuth(w, r) {
 		return
 	}
@@ -38,6 +46,10 @@ func HandleGetContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleSaveContent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})
+		return
+	}
 	if !auth.RequireAuth(w, r) {
 		return
 	}
@@ -45,8 +57,7 @@ func HandleSaveContent(w http.ResponseWriter, r *http.Request) {
 		Path    string `json:"path"`
 		Content string `json:"content"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: "Invalid request"})
+	if err := decodeJSONBody(w, r, &req, 2<<20); err != nil {
 		return
 	}
 	if err := writeArticle(req.Path, req.Content); err != nil {
@@ -57,14 +68,17 @@ func HandleSaveContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleDeletePost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})
+		return
+	}
 	if !auth.RequireAuth(w, r) {
 		return
 	}
 	var req struct {
 		Path string `json:"path"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: "Invalid request"})
+	if err := decodeJSONBody(w, r, &req, 16<<10); err != nil {
 		return
 	}
 	if err := removeArticle(req.Path); err != nil {
@@ -75,6 +89,10 @@ func HandleDeletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})
+		return
+	}
 	if !auth.RequireAuth(w, r) {
 		return
 	}
@@ -84,8 +102,7 @@ func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 		Body       string `json:"body"`
 		Draft      bool   `json:"draft"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: "Invalid request"})
+	if err := decodeJSONBody(w, r, &req, 64<<10); err != nil {
 		return
 	}
 	path, err := createArticle(req.Title, req.Categories, req.Body, req.Draft)
@@ -97,18 +114,30 @@ func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPosts() []models.Post {
+	posts, err := article.List()
+	if err == nil && len(posts) > 0 {
+		return posts
+	}
+	posts, err = SyncArticlesToDatabase()
+	if err != nil {
+		return []models.Post{}
+	}
+	return posts
+}
+
+func SyncArticlesToDatabase() ([]models.Post, error) {
 	root := articleRootDir()
 	if root == "" {
-		return []models.Post{}
+		return []models.Post{}, fmt.Errorf("hugo path is not configured")
 	}
 
 	contentRoot := filepath.Join(root, "content")
 	info, err := os.Stat(contentRoot)
 	if err != nil || !info.IsDir() {
-		return []models.Post{}
+		return []models.Post{}, fmt.Errorf("content directory not found")
 	}
 
-	var posts []models.Post
+	var records []models.ArticleRecord
 	_ = filepath.Walk(contentRoot, func(path string, entry os.FileInfo, walkErr error) error {
 		if walkErr != nil || entry == nil || entry.IsDir() || filepath.Ext(entry.Name()) != ".md" || strings.HasPrefix(entry.Name(), "_") {
 			return nil
@@ -146,18 +175,34 @@ func getPosts() []models.Post {
 			date = frontmatter.Date
 		}
 
-		posts = append(posts, models.Post{
-			Title:       fallbackArticleTitle(frontmatter.Title, relPath),
-			Lang:        lang,
-			Path:        relPath,
-			Date:        date,
-			Status:      status,
-			StatusColor: color,
-			Pinned:      frontmatter.Pinned,
+		records = append(records, models.ArticleRecord{
+			Post: models.Post{
+				Title:       fallbackArticleTitle(frontmatter.Title, relPath),
+				Lang:        lang,
+				Path:        strings.ReplaceAll(relPath, string(os.PathSeparator), "/"),
+				Date:        date,
+				Status:      status,
+				StatusColor: color,
+				Pinned:      frontmatter.Pinned,
+			},
+			Content:   string(content),
+			CreatedAt: entry.ModTime().UTC().Format(time.RFC3339),
+			UpdatedAt: entry.ModTime().UTC().Format(time.RFC3339),
 		})
 		return nil
 	})
 
+	if err := article.ReplaceFromDisk(records); err == nil {
+		posts, listErr := article.List()
+		if listErr == nil {
+			return posts, nil
+		}
+	}
+
+	posts := make([]models.Post, 0, len(records))
+	for _, record := range records {
+		posts = append(posts, record.Post)
+	}
 	sort.Slice(posts, func(i, j int) bool {
 		if posts[i].Pinned != posts[j].Pinned {
 			return posts[i].Pinned
@@ -165,10 +210,13 @@ func getPosts() []models.Post {
 		return posts[i].Date > posts[j].Date
 	})
 
-	return posts
+	return posts, nil
 }
 
 func readArticle(relPath string) (string, error) {
+	if content, ok, err := article.GetContent(relPath); err == nil && ok {
+		return content, nil
+	}
 	path, err := resolveArticlePath(relPath)
 	if err != nil {
 		return "", err
@@ -191,7 +239,10 @@ func writeArticle(relPath, content string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(content), 0o600)
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		return err
+	}
+	return article.Upsert(articleRecordFromContent(relPath, content, time.Now()))
 }
 
 func removeArticle(relPath string) error {
@@ -202,6 +253,7 @@ func removeArticle(relPath string) error {
 	if err := os.Remove(path); err != nil {
 		return err
 	}
+	_ = article.Delete(relPath)
 	cleanupEmptyDirs(filepath.Dir(path), articleRootDir())
 	return nil
 }
@@ -243,10 +295,42 @@ func createArticle(title, categories, body string, draft bool) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o600); err != nil {
+	content := strings.Join(lines, "\n")
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		return "", err
+	}
+	if err := article.Upsert(articleRecordFromContent(relPath, content, time.Now())); err != nil {
 		return "", err
 	}
 	return relPath, nil
+}
+
+func articleRecordFromContent(relPath, content string, updatedAt time.Time) models.ArticleRecord {
+	frontmatter := parseFrontmatter(content)
+	lang := "en"
+	normalized := strings.ToLower(strings.ReplaceAll(relPath, "\\", "/"))
+	if strings.Contains(normalized, "/zh-cn/") || strings.Contains(normalized, "/zh/") {
+		lang = "zh-cn"
+	}
+	status := "PUBLISHED"
+	color := "#22c55e"
+	if frontmatter.Draft {
+		status = "DRAFT"
+		color = "#f59e0b"
+	}
+	return models.ArticleRecord{
+		Post: models.Post{
+			Title:       fallbackArticleTitle(frontmatter.Title, relPath),
+			Lang:        lang,
+			Path:        strings.ReplaceAll(relPath, "\\", "/"),
+			Date:        frontmatter.Date,
+			Status:      status,
+			StatusColor: color,
+			Pinned:      frontmatter.Pinned,
+		},
+		Content:   content,
+		UpdatedAt: updatedAt.UTC().Format(time.RFC3339),
+	}
 }
 
 func parseFrontmatter(content string) models.Frontmatter {

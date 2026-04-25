@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,9 +13,13 @@ import (
 	"syscall"
 	"time"
 
+	"vantalens/talentwriter/internal/analytics"
+	"vantalens/talentwriter/internal/article"
 	"vantalens/talentwriter/internal/auth"
+	"vantalens/talentwriter/internal/comment"
 	"vantalens/talentwriter/internal/config"
 	"vantalens/talentwriter/internal/email"
+	"vantalens/talentwriter/internal/handlers"
 	"vantalens/talentwriter/internal/server"
 )
 
@@ -42,18 +47,48 @@ func main() {
 	auth.InitJWTSecret()
 	log.Println("[AUTH] JWT secret initialized")
 
+	if err := analytics.Init(hugoPath); err != nil {
+		log.Fatalf("[ANALYTICS] Init failed: %v", err)
+	}
+	log.Println("[ANALYTICS] SQLite initialized")
+
+	if err := comment.Init(hugoPath); err != nil {
+		log.Fatalf("[COMMENTS] Init failed: %v", err)
+	}
+	log.Println("[COMMENTS] SQLite initialized")
+
+	if err := article.Init(hugoPath); err != nil {
+		log.Fatalf("[ARTICLES] Init failed: %v", err)
+	}
+	log.Println("[ARTICLES] SQLite initialized")
+	if posts, err := handlers.SyncArticlesToDatabase(); err != nil {
+		log.Printf("[ARTICLES] Initial sync skipped: %v", err)
+	} else {
+		log.Printf("[ARTICLES] Initial sync completed: %d posts", len(posts))
+	}
+
 	email.StartWorkers()
 	log.Println("[EMAIL] Workers started")
 
 	mux := server.BuildMux(server.ModeAll, Version)
 	log.Println("[HTTP] Routes registered (mode=all)")
 
+	host := config.GetEnv("HTTP_HOST", "127.0.0.1")
 	port := parsePort(config.GetEnv("HTTP_PORT", strconv.Itoa(config.Port)), config.Port)
-	addr := fmt.Sprintf(":%d", port)
+	addr := fmt.Sprintf("%s:%d", host, port)
 	log.Printf("[SERVER] Starting on %s", addr)
 
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           server.WithSecurityHeaders(mux),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       90 * time.Second,
+	}
+
 	go func() {
-		if err := http.ListenAndServe(addr, mux); err != nil {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("[SERVER] Error: %v", err)
 		}
 	}()
@@ -66,6 +101,11 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("[SERVER] Shutting down...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("[SERVER] Graceful shutdown failed: %v", err)
+	}
 }
 
 func parsePort(raw string, def int) int {

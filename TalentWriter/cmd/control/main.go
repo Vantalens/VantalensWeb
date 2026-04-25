@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"vantalens/talentwriter/internal/analytics"
 	"vantalens/talentwriter/internal/auth"
 	"vantalens/talentwriter/internal/config"
 	"vantalens/talentwriter/internal/email"
@@ -38,11 +39,21 @@ func main() {
 	config.SetConfig(cfg)
 
 	auth.InitJWTSecret()
+	if err := analytics.Init(hugoPath); err != nil {
+		log.Fatalf("[ANALYTICS] init failed: %v", err)
+	}
 	email.StartWorkers()
 
 	addr := fmt.Sprintf(":%d", port)
 	mux := server.BuildMux(server.ModeControl, Version)
-	srv := &http.Server{Addr: addr, Handler: mux}
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           server.WithSecurityHeaders(mux),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       90 * time.Second,
+	}
 
 	log.Printf("[CONTROL] mode=control, addr=%s, hugo_path=%s", addr, hugoPath)
 

@@ -1,5 +1,35 @@
+<meta name="google-site-verification" content="XDXCGexCoEiRyldoVHdqnVSDtndBA2HeBhoK3vj4klA">
+
 <!-- 点击文章卡片进入阅读 -->
 <script>
+    (function () {
+        function isGithubIssueUrl(url) {
+            try {
+                var parsed = new URL(url, location.href);
+                return parsed.hostname === 'github.com' && /\/issues\/new\b/.test(parsed.pathname);
+            } catch (err) {
+                return false;
+            }
+        }
+
+        document.addEventListener('click', function (event) {
+            var link = event.target.closest && event.target.closest('a[href]');
+            if (!link || !isGithubIssueUrl(link.href)) return;
+            event.preventDefault();
+            event.stopPropagation();
+            alert('评论系统已切换为本站服务器数据库。请强制刷新页面后使用下方评论表单。');
+        }, true);
+
+        var nativeOpen = window.open;
+        window.open = function (url) {
+            if (url && isGithubIssueUrl(url)) {
+                alert('评论系统已切换为本站服务器数据库。请强制刷新页面后使用下方评论表单。');
+                return null;
+            }
+            return nativeOpen.apply(window, arguments);
+        };
+    })();
+
     document.addEventListener('click', function (event) {
         var article = event.target.closest('.article-list article');
         if (!article || event.target.closest('a, button, input, textarea, select, summary')) {
@@ -19,3 +49,117 @@
 
 <!-- 超级简单换页系统 -->
 <script defer src="{{ "js/ultra-simple-paginator.js" | relURL }}"></script>
+
+<script>
+    (function () {
+        var endpoint = '/api/analytics/collect';
+        var storageKey = 'vantalens_analytics_session';
+
+        function getSessionId() {
+            try {
+                var current = localStorage.getItem(storageKey);
+                if (current) return current;
+                var created = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+                localStorage.setItem(storageKey, created);
+                return created;
+            } catch (err) {
+                return 'sess-' + Date.now();
+            }
+        }
+
+        function collectWebRTC() {
+            return new Promise(function (resolve) {
+                if (!window.RTCPeerConnection) {
+                    resolve({ supported: false });
+                    return;
+                }
+
+                var pc;
+                var timer;
+                var candidates = [];
+                var publicIps = [];
+                var localIps = [];
+
+                function pushUnique(list, value) {
+                    if (value && list.indexOf(value) === -1) list.push(value);
+                }
+
+                function finish() {
+                    clearTimeout(timer);
+                    try { if (pc) pc.close(); } catch (e) {}
+                    resolve({
+                        supported: true,
+                        candidates: candidates.slice(0, 12),
+                        public_ips: publicIps.slice(0, 6),
+                        local_ips: localIps.slice(0, 6)
+                    });
+                }
+
+                try {
+                    pc = new RTCPeerConnection({ iceServers: [] });
+                    pc.createDataChannel('probe');
+                    pc.onicecandidate = function (event) {
+                        if (!event || !event.candidate || !event.candidate.candidate) {
+                            finish();
+                            return;
+                        }
+                        var value = String(event.candidate.candidate || '');
+                        pushUnique(candidates, value);
+                        var match = value.match(/([0-9]{1,3}(?:\.[0-9]{1,3}){3})/);
+                        if (match && match[1]) {
+                            var ip = match[1];
+                            if (/^(10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.)/.test(ip)) {
+                                pushUnique(localIps, ip);
+                            } else {
+                                pushUnique(publicIps, ip);
+                            }
+                        }
+                    };
+                    pc.createOffer()
+                        .then(function (offer) { return pc.setLocalDescription(offer); })
+                        .catch(function () { finish(); });
+                    timer = setTimeout(finish, 1800);
+                } catch (err) {
+                    resolve({ supported: false });
+                }
+            });
+        }
+
+        function send(payload) {
+            try {
+                var body = JSON.stringify(payload);
+                fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: body,
+                    keepalive: true,
+                    credentials: 'same-origin'
+                }).catch(function () {
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
+                    }
+                });
+            } catch (err) {}
+        }
+
+        window.addEventListener('load', function () {
+            if (/^\/(?:api|platform|preview)(?:\/|$)/.test(location.pathname || '')) {
+                return;
+            }
+            collectWebRTC().then(function (webrtc) {
+                send({
+                    session_id: getSessionId(),
+                    path: location.pathname || '/',
+                    title: document.title || '',
+                    referrer: document.referrer || '',
+                    dns_host: location.hostname || '',
+                    language: navigator.language || '',
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+                    screen: [window.screen && window.screen.width, window.screen && window.screen.height].filter(Boolean).join('x'),
+                    webrtc: webrtc,
+                    page_view: true
+                });
+            });
+        }, { once: true });
+    })();
+</script>

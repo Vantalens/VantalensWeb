@@ -4,15 +4,21 @@
 public/
 resources/
 .hugo_build.lock
+hugo_stats.json
 
 # Binaries (do not upload)
 *.exe
 *.dll
+*.so
+*.dylib
 bin/
 .tools/
+hugo.exe
 
 # Logs
 *.log
+*.err
+*.pid
 
 # Sensitive config (do not upload)
 .env
@@ -20,6 +26,15 @@ bin/
 config/comment_settings.json
 **/comments.json
 config/_default/comment_settings.json
+**/comment_settings.json
+**/*secret*
+**/*private*
+**/*deploy_key*
+**/*ssh_key*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
 
 # System
 .DS_Store
@@ -34,16 +49,48 @@ Thumbs.db
 # Temp
 *.tmp
 *.bak
+*.backup
+*.old
+*.orig
+*.zip
+*.tar
+*.tgz
+*.tar.gz
 
 # Go cache
 .go-cache/
+.go-mod-cache/
+go-cache/
+go-mod-cache/
+**/.go-cache/
+**/.go-mod-cache/
+**/go-cache/
+**/go-mod-cache/
 vendor/
 
 # Theme (downloaded, not uploaded)
 themes/stack/
+
+# TalentWriter runtime data
+.talentwriter/
+TalentWriter/build/
+TalentWriter/data/
+TalentWriter/public/
+TalentWriter/.hugo_build.lock
+TalentWriter/*.exe
 
 # Build output
 build/
 dist/
 out/
 tools/hugo/
+
+# Runtime databases and generated data
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+data/comments/
+data/analytics/
+data/articles/
+config/audit.log

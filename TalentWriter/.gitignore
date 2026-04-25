@@ -8,11 +8,15 @@
 
 # Build cache
 .go-cache/
+go-cache/
+.go-mod-cache/
+go-mod-cache/
 go-build-*
 
 # Logs
 *.log
 *.err
+*.pid
 
 # IDE
 .idea/
@@ -27,12 +31,29 @@ Thumbs.db
 # Environment (do not upload)
 .env
 *.env
+*.pem
+*.key
+*deploy_key*
+*ssh_key*
 
 # Data (user generated)
 data/comments/
+data/analytics/
+data/articles/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
 config/
 
 # Generated site output
 public/
 .hugo_build.lock
+
+# Build output
+build/
+dist/
+out/
+*.tgz
+*.tar.gz
 

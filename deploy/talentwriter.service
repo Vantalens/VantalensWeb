@@ -1,0 +1,35 @@
+[Unit]
+Description=Vantalens TalentWriter backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/vantalens/talentwriter
+ExecStart=/opt/vantalens/talentwriter/talentwriter-server
+Restart=always
+RestartSec=3
+User=vantalens
+Group=vantalens
+UMask=0077
+Environment=HTTP_PORT=9090
+Environment=HTTP_HOST=127.0.0.1
+Environment=HUGO_PATH=/var/www/vantalens
+Environment=TALENTWRITER_AUTO_OPEN_BROWSER=false
+Environment=ALLOWED_ORIGINS=https://vantalens.com,https://www.vantalens.com
+Environment=COMMENTS_DB_PATH=/var/lib/vantalens/comments/comments.db
+Environment=ARTICLES_DB_PATH=/var/lib/vantalens/articles/articles.db
+Environment=ANALYTICS_DB_PATH=/var/lib/vantalens/analytics/visits.db
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadOnlyPaths=/opt/vantalens/talentwriter /var/www/vantalens
+ReadWritePaths=/var/lib/vantalens
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

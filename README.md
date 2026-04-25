@@ -67,6 +67,7 @@ go run ./cmd/writer
 
 ## 参考
 
+- 项目落地标准：[PROJECT_STANDARD.md](PROJECT_STANDARD.md)
 - 评论配置：[config/_default/params.toml](config/_default/params.toml)
 - 评论设置：[config/comment_settings.json](config/comment_settings.json)
 - 统计说明：[BUSUANZI_SETUP.md](BUSUANZI_SETUP.md)

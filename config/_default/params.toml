@@ -4,11 +4,6 @@ favicon = "img/favicon.png"
 
 apiBase = ""
 
-githubCommentsRepo = "Vantalens/VantalensWeb"
-githubCommentsLabelApproved = "approved"
-githubCommentsLabelPending = "pending"
-githubCommentsLabelComment = "comment"
-
 defaultContentLanguage = "zh-cn"
 hasCJKLanguage = true
 

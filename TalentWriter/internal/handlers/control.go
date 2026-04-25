@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -60,22 +60,30 @@ func HandleBackendPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleControlStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})
+		return
+	}
+	if !auth.RequireAuth(w, r) {
+		return
+	}
 	cfg := config.GetConfig()
 	hugoPath := ""
-	adminSet := false
 	if cfg != nil {
 		hugoPath = cfg.HugoPath
-		adminSet = cfg.AdminToken != ""
 	}
 
 	hugoCommand := resolveHugoCommand(hugoPath)
 	frontend := runCommand(hugoPath, 25*time.Second, hugoCommand[0], append(hugoCommand[1:], "version")...)
 	backend := map[string]interface{}{
-		"service":            "online",
-		"platform":           runtime.GOOS,
-		"hugo_path":          hugoPath,
-		"admin_token_config": adminSet,
+		"service":       "online",
+		"platform":      runtime.GOOS,
+		"hugo_path":     hugoPath,
+		"launcher_mode": cfgMode(cfg),
 	}
+	backend["writer_embedded"] = cfgMode(cfg) == "all"
+	backend["preview_url"] = previewPublicURL()
+	backend["preview_running"] = checkHTTPReady(previewInternalURL(), 900*time.Millisecond)
 
 	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Data: map[string]interface{}{
 		"frontend": frontend,
@@ -89,13 +97,16 @@ type controlCommandRequest struct {
 }
 
 func HandleControlCommand(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})
+		return
+	}
 	if !auth.RequireAuth(w, r) {
 		return
 	}
 
 	var req controlCommandRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: "Invalid request"})
+	if err := decodeJSONBody(w, r, &req, 16<<10); err != nil {
 		return
 	}
 
@@ -142,13 +153,28 @@ func executeControlCommand(cfg *config.Config, hugoPath, scope, action string) (
 		case "preview":
 			hugoCommand := resolveHugoCommand(hugoPath)
 			previewPort := 1313
-			previewURL := config.LocalhostURL(previewPort, "/VantalensWeb/")
-			args := append(hugoCommand[1:], "server", "--bind", "127.0.0.1", "--port", strconv.Itoa(previewPort), "--appendPort=false", "--baseURL", previewURL)
-			res := startCommand(hugoPath, hugoCommand[0], args...)
+			internalURL := config.LocalhostURL(previewPort, "/")
+			publicURL := previewPublicURL()
+			if checkHTTPReady(internalURL, 900*time.Millisecond) {
+				return map[string]interface{}{"scope": scope, "action": action, "result": map[string]interface{}{"preview_url": publicURL, "output": "preview already running"}}, nil
+			}
+			args := append(hugoCommand[1:], "server", "--bind", "127.0.0.1", "--port", strconv.Itoa(previewPort), "--appendPort=false", "--baseURL", publicURL)
+			res := startHugoPreviewCommand(hugoPath, hugoCommand[0], args...)
 			if !res.Success {
 				return map[string]interface{}{"scope": scope, "action": action, "result": res}, fmt.Errorf("frontend preview failed")
 			}
-			return map[string]interface{}{"scope": scope, "action": action, "result": map[string]interface{}{"preview_url": previewURL, "result": res}}, nil
+			if !waitForHTTPReady(internalURL, 6*time.Second) {
+				return map[string]interface{}{
+					"scope":  scope,
+					"action": action,
+					"result": map[string]interface{}{
+						"preview_url": publicURL,
+						"warning":     "preview process started; readiness check is still pending",
+						"result":      res,
+					},
+				}, nil
+			}
+			return map[string]interface{}{"scope": scope, "action": action, "result": map[string]interface{}{"preview_url": publicURL, "result": res}}, nil
 		default:
 			return nil, fmt.Errorf("unsupported frontend action: %s", action)
 		}
@@ -167,6 +193,16 @@ func executeControlCommand(cfg *config.Config, hugoPath, scope, action string) (
 				"result": []string{"/platform/control", "/platform/backend", "/api/posts", "/api/comments", "/api/settings", "/health", "/api/health"},
 			}, nil
 		case "stop_writer":
+			if cfgMode(cfg) == "all" {
+				return map[string]interface{}{
+					"scope":  scope,
+					"action": action,
+					"result": map[string]interface{}{
+						"message": "writer is embedded in unified mode; nothing to stop separately",
+						"mode":    "all",
+					},
+				}, nil
+			}
 			writerPort := 9091
 			if cfg != nil && cfg.WriterPort > 0 {
 				writerPort = cfg.WriterPort
@@ -177,6 +213,16 @@ func executeControlCommand(cfg *config.Config, hugoPath, scope, action string) (
 			}
 			return map[string]interface{}{"scope": scope, "action": action, "result": res}, nil
 		case "stop_control":
+			if cfgMode(cfg) == "all" {
+				return map[string]interface{}{
+					"scope":  scope,
+					"action": action,
+					"result": map[string]interface{}{
+						"message": "control and writer share one process in unified mode; close the program window instead",
+						"mode":    "all",
+					},
+				}, nil
+			}
 			controlPort := 9090
 			if cfg != nil && cfg.ControlPort > 0 {
 				controlPort = cfg.ControlPort
@@ -216,6 +262,15 @@ func stopListenerOnPort(port int) commandResult {
 
 func resolveHugoCommand(hugoPath string) []string {
 	if hugoPath != "" {
+		if runtime.GOOS == "windows" {
+			candidate := filepath.Join(hugoPath, "hugo.exe")
+			if _, err := os.Stat(candidate); err == nil {
+				if abs, absErr := filepath.Abs(candidate); absErr == nil {
+					return []string{abs}
+				}
+				return []string{candidate}
+			}
+		}
 		if info, err := os.Stat(hugoPath); err == nil && !info.IsDir() {
 			if abs, absErr := filepath.Abs(hugoPath); absErr == nil {
 				return []string{abs}
@@ -254,6 +309,34 @@ func resolveHugoCommand(hugoPath string) []string {
 func startCommand(dir string, name string, args ...string) commandResult {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	if err := cmd.Start(); err != nil {
+		return commandResult{Success: false, Output: err.Error()}
+	}
+	return commandResult{Success: true, Output: fmt.Sprintf("started pid %d", cmd.Process.Pid)}
+}
+
+func startHugoPreviewCommand(dir string, name string, args ...string) commandResult {
+	cmd := exec.Command(name, args...)
+	cmd.Dir = dir
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+
+	cacheDir := filepath.Join(dir, "build", "preview-cache")
+	resourceDir := filepath.Join(dir, "build", "preview-resources")
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		return commandResult{Success: false, Output: err.Error()}
+	}
+	if err := os.MkdirAll(resourceDir, 0o755); err != nil {
+		return commandResult{Success: false, Output: err.Error()}
+	}
+
+	cmd.Env = append(os.Environ(),
+		"HUGO_CACHEDIR="+cacheDir,
+		"HUGO_RESOURCEDIR="+resourceDir,
+	)
+
 	if err := cmd.Start(); err != nil {
 		return commandResult{Success: false, Output: err.Error()}
 	}
@@ -284,4 +367,51 @@ func runCommand(dir string, timeout time.Duration, name string, args ...string) 
 		return commandResult{Success: false, Output: output}
 	}
 	return commandResult{Success: true, Output: output}
+}
+
+func cfgMode(cfg *config.Config) string {
+	if cfg == nil || strings.TrimSpace(cfg.LauncherMode) == "" {
+		return "all"
+	}
+	return strings.TrimSpace(cfg.LauncherMode)
+}
+
+func previewInternalURL() string {
+	return config.LocalhostURL(1313, "/preview/")
+}
+
+func previewPublicURL() string {
+	raw := strings.TrimSpace(config.GetEnv("PREVIEW_PUBLIC_URL", ""))
+	if raw == "" {
+		return previewInternalURL()
+	}
+	if !strings.HasSuffix(raw, "/") {
+		raw += "/"
+	}
+	return raw
+}
+
+func waitForHTTPReady(rawURL string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if checkHTTPReady(rawURL, 900*time.Millisecond) {
+			return true
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	return false
+}
+
+func checkHTTPReady(rawURL string, timeout time.Duration) bool {
+	client := &http.Client{Timeout: timeout}
+	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	if err != nil {
+		return false
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode < 500
 }

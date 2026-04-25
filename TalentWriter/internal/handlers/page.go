@@ -258,6 +258,7 @@ func DashboardHTML(version string, controlURL string) string {
         localStorage.setItem('auth_token', token);
         setAuth();
         await loadPosts();
+        await loadCommentsForCurrent();
       } catch (error) {
         showLoginModal('登录请求异常: ' + error.message);
       }
@@ -551,45 +552,68 @@ func DashboardHTML(version string, controlURL string) string {
     async function loadCommentsForCurrent() {
       const panel = document.getElementById('comment-panel');
       const count = document.getElementById('comment-count');
-      if (!state.currentPath) {
-        panel.innerHTML = '<div class="muted">未选择文章</div>';
-        count.textContent = '请选择文章';
+      if (!hasToken()) {
+        panel.innerHTML = '<div class="muted">请先登录后再刷新评论</div>';
+        count.textContent = '需要登录';
+        showLoginModal('请先登录后再刷新评论');
         return;
       }
       panel.innerHTML = '<div class="muted">加载中...</div>';
-      const response = await authFetch('/api/comments?path=' + encodeURIComponent(state.currentPath));
+      const response = await authFetch('/api/comments?all=1');
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) {
+        if (isTokenInvalid(response, data)) {
+          clearAuthToken();
+          panel.innerHTML = '<div class="muted">登录态已失效，请重新登录后刷新评论</div>';
+          count.textContent = '需要重新登录';
+          showLoginModal('登录态已失效，请重新登录后刷新评论');
+          return;
+        }
         panel.innerHTML = '<div class="muted">评论加载失败</div>';
         count.textContent = '加载失败';
         return;
       }
       const comments = Array.isArray(data.data) ? data.data : [];
-      count.textContent = '共 ' + comments.length + ' 条';
+      const pending = comments.filter(function (item) { return !item.approved; }).length;
+      const approvedCount = comments.length - pending;
+      count.textContent = '全库评论 ' + comments.length + ' 条，已审核 ' + approvedCount + ' 条，待审核 ' + pending + ' 条';
       if (!comments.length) {
-        panel.innerHTML = '<div class="muted">暂无评论</div>';
+        panel.innerHTML = '<div class="muted">数据库中暂无评论。提交成功但未出现在这里时，请先确认前台是否提示“评论已提交”。</div>';
         return;
       }
+      const summary = '<div class="muted" style="margin-bottom:10px;">这里显示整个评论数据库，不按当前文章过滤。前台文章页只展示“已审核”的评论，待审核评论不会公开。</div>';
       panel.innerHTML = comments.map(function (item) {
         const approved = !!item.approved;
-        return '<div class="post">' +
-          '<div class="post-title" style="font-size:13px;">' + escapeHtml(item.author || '匿名') + ' · ' + (approved ? '已审核' : '待审核') + '</div>' +
-          '<div class="post-meta"><span>' + escapeHtml(item.timestamp || '-') + '</span><span>' + escapeHtml((item.content || '').slice(0, 22)) + '</span></div>' +
+        const itemPath = item.post_path || state.currentPath || '';
+        const risk = Array.isArray(item.risk_reasons) && item.risk_reasons.length
+          ? '<div class="post-meta"><span>风控：' + escapeHtml(item.risk_reasons.join('；')) + '</span></div>'
+          : '';
+        return '<div class="post" style="' + (approved ? '' : 'border-color:rgba(245,158,11,.45);') + '">' +
+          '<div class="post-title" style="font-size:13px;">' + escapeHtml(item.author || '匿名') + ' · ' + (approved ? '已审核，可在前台显示' : '待审核，前台暂不显示') + '</div>' +
+          '<div class="post-meta"><span>' + escapeHtml(item.timestamp || '-') + '</span><span>' + escapeHtml(itemPath) + '</span></div>' +
+          '<div class="post-meta"><span>' + escapeHtml((item.content || '').slice(0, 120)) + '</span></div>' +
+          risk +
           '<div class="row" style="margin-top:8px;">' +
-          (approved ? '' : '<button class="btn" onclick="approveComment(' + JSON.stringify(item.id || '') + ')">审核通过</button>') +
+          (approved ? '<button class="btn" disabled>已通过</button>' : '<button class="btn" onclick="approveComment(' + JSON.stringify(item.id || '') + ')">审核通过</button>') +
           '<button class="btn danger" onclick="removeComment(' + JSON.stringify(item.id || '') + ')">删除</button>' +
           '</div>' +
           '</div>';
       }).join('');
+      panel.innerHTML = summary + panel.innerHTML;
     }
 
     async function approveComment(id) {
-      if (!id || !state.currentPath) return;
-      const response = await authFetch('/api/comments/approve?path=' + encodeURIComponent(state.currentPath) + '&id=' + encodeURIComponent(id), {
+      if (!id) return;
+      const response = await authFetch('/api/comments/approve?id=' + encodeURIComponent(id), {
         method: 'POST'
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) {
+        if (isTokenInvalid(response, data)) {
+          clearAuthToken();
+          showLoginModal('登录态已失效，请重新登录后审核评论');
+          return;
+        }
         showLoginModal(data.message || '审核失败');
         return;
       }
@@ -597,13 +621,18 @@ func DashboardHTML(version string, controlURL string) string {
     }
 
     async function removeComment(id) {
-      if (!id || !state.currentPath) return;
+      if (!id) return;
       if (!confirm('确认删除这条评论吗？')) return;
-      const response = await authFetch('/api/comments/delete?path=' + encodeURIComponent(state.currentPath) + '&id=' + encodeURIComponent(id), {
+      const response = await authFetch('/api/comments/delete?id=' + encodeURIComponent(id), {
         method: 'POST'
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) {
+        if (isTokenInvalid(response, data)) {
+          clearAuthToken();
+          showLoginModal('登录态已失效，请重新登录后删除评论');
+          return;
+        }
         showLoginModal(data.message || '删除失败');
         return;
       }
@@ -625,12 +654,13 @@ func DashboardHTML(version string, controlURL string) string {
       await checkHealth();
       if (hasToken()) {
         await loadPosts();
+        await loadCommentsForCurrent();
       }
     })();
   </script>
 </body>
 </html>`
-  page = strings.ReplaceAll(page, "{{VERSION}}", version)
-  page = strings.ReplaceAll(page, "{{CONTROL_URL}}", controlURL)
-  return page
+	page = strings.ReplaceAll(page, "{{VERSION}}", version)
+	page = strings.ReplaceAll(page, "{{CONTROL_URL}}", controlURL)
+	return page
 }

@@ -1,934 +1,404 @@
 {{ if (.Params.comments | default true) }}
-<div class="article-comments">
-    <h3 style="margin-top: 40px;">{{ if eq .Lang "zh-cn" }}💬 评论{{ else }}💬 Comments{{ end }}</h3>
-    
-    <!-- 评论列表 -->
-    <div id="comments-list" class="comments-container">
-        <div style="text-align: center; color: #999; padding: 40px;">
-            {{ if eq .Lang "zh-cn" }}加载评论中...{{ else }}Loading comments...{{ end }}
+<section class="article-comments" data-api-base="{{ .Site.Params.apiBase | default "" }}">
+    <div class="comments-card">
+        <div class="comments-head">
+            <div>
+                <h3>{{ if eq .Lang "zh-cn" }}评论{{ else }}Comments{{ end }}</h3>
+                <p>{{ if eq .Lang "zh-cn" }}评论提交至本站服务器数据库，审核通过后公开显示。{{ else }}Comments are stored on this server and shown after moderation.{{ end }}</p>
+            </div>
+            <button type="button" class="btn-open-comment-form" onclick="openCommentForm()">
+                {{ if eq .Lang "zh-cn" }}发表评论{{ else }}Post Comment{{ end }}
+            </button>
+        </div>
+
+        <div id="comments-list" class="comments-container">
+            <div class="comment-empty">{{ if eq .Lang "zh-cn" }}加载评论中...{{ else }}Loading comments...{{ end }}</div>
         </div>
     </div>
 
-    <!-- 发表评论按钮 -->
-    <div style="text-align: center; margin: 30px 0;">
-        <button type="button" class="btn-open-comment-form" onclick="openCommentForm()">
-            {{ if eq .Lang "zh-cn" }}💬 发表评论{{ else }}💬 Post a Comment{{ end }}
-        </button>
-    </div>
-
-    <!-- 评论表单模态窗口 -->
-    <div id="comment-modal" class="comment-modal" style="display: none;" data-api-base="{{ .Site.Params.apiBase | default "" }}" data-github-repo="{{ .Site.Params.githubCommentsRepo | default "" }}" data-github-label-approved="{{ .Site.Params.githubCommentsLabelApproved | default "approved" }}" data-github-label-pending="{{ .Site.Params.githubCommentsLabelPending | default "pending" }}" data-github-label-comment="{{ .Site.Params.githubCommentsLabelComment | default "comment" }}">
+    <div id="comment-modal" class="comment-modal" style="display: none;">
         <div class="comment-modal-content">
             <div class="comment-modal-header">
-                <h4>{{ if eq .Lang "zh-cn" }}💬 发表评论{{ else }}💬 Post a Comment{{ end }}</h4>
-                <button type="button" class="comment-modal-close" onclick="closeCommentForm()">✕</button>
-            </div>
-            <div id="replying-to" style="display:none; margin-bottom:10px; font-size:13px; color:#666; padding: 10px; background: #f0f8ff; border-radius: 4px;">
-                {{ if eq .Lang "zh-cn" }}正在回复：{{ else }}Replying to: {{ end }}<span id="replying-to-name" style="font-weight: 600;"></span>
-                <button type="button" class="comment-reply-cancel" onclick="cancelReply()">{{ if eq .Lang "zh-cn" }}取消回复{{ else }}Cancel{{ end }}</button>
+                <h4>{{ if eq .Lang "zh-cn" }}发表评论{{ else }}Post a Comment{{ end }}</h4>
+                <button type="button" class="comment-modal-close" onclick="closeCommentForm()" aria-label="Close">×</button>
             </div>
             <form id="comment-form" onsubmit="submitComment(event)">
-                <input type="hidden" id="comment-parent-id" name="parent_id" />
-                <div class="form-group">
-                    <label for="comment-name">{{ if eq .Lang "zh-cn" }}姓名 *{{ else }}Name *{{ end }}</label>
-                    {{ if eq .Lang "zh-cn" }}
-                    <input type="text" id="comment-name" name="name" placeholder="您的姓名" required />
-                    {{ else }}
-                    <input type="text" id="comment-name" name="name" placeholder="Your name" required />
-                    {{ end }}
+                <input type="hidden" id="comment-parent-id" name="parent_id">
+                <input type="text" id="comment-website" name="website" autocomplete="off" tabindex="-1" aria-hidden="true">
+
+                <div id="replying-to" class="replying-to" style="display:none;">
+                    {{ if eq .Lang "zh-cn" }}正在回复：{{ else }}Replying to: {{ end }}<span id="replying-to-name"></span>
+                    <button type="button" onclick="cancelReply()">{{ if eq .Lang "zh-cn" }}取消{{ else }}Cancel{{ end }}</button>
                 </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="comment-name">{{ if eq .Lang "zh-cn" }}姓名或昵称 *{{ else }}Name or nickname *{{ end }}</label>
+                        <input type="text" id="comment-name" name="name" maxlength="50" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="comment-phone">{{ if eq .Lang "zh-cn" }}手机号（国际格式）*{{ else }}Phone, international format *{{ end }}</label>
+                        <input type="tel" id="comment-phone" name="phone" placeholder="+8613800138000" autocomplete="tel" required>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="comment-email">{{ if eq .Lang "zh-cn" }}邮箱 *{{ else }}Email *{{ end }}</label>
-                    <input type="email" id="comment-email" name="email" placeholder="your@email.com" required />
-                    <small style="display:block; margin-top:6px; color:#888; font-size:12px;">
-                        {{ if eq .Lang "zh-cn" }}仅站长可见，用于审核与联系，不会在网站公开展示。{{ else }}Visible to site owner only for moderation; not shown publicly.{{ end }}
-                    </small>
+                    <div class="email-code-row">
+                        <input type="email" id="comment-email" name="email" placeholder="you@example.com" autocomplete="email" required>
+                        <button type="button" class="btn-secondary" id="send-email-code" onclick="sendEmailCode()">{{ if eq .Lang "zh-cn" }}发送验证码{{ else }}Send Code{{ end }}</button>
+                    </div>
+                    <small>{{ if eq .Lang "zh-cn" }}邮箱、手机号、IP 与指纹仅供审核和风控使用，不会公开展示。{{ else }}Email, phone, IP and fingerprint are used only for moderation and risk checks.{{ end }}</small>
                 </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="comment-email-code">{{ if eq .Lang "zh-cn" }}邮箱验证码 *{{ else }}Email code *{{ end }}</label>
+                        <input type="text" id="comment-email-code" inputmode="numeric" maxlength="6" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="comment-captcha-answer">{{ if eq .Lang "zh-cn" }}流量筛查 *{{ else }}Traffic check *{{ end }} <span id="comment-captcha-question"></span></label>
+                        <input type="text" id="comment-captcha-answer" inputmode="numeric" required>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="comment-content">{{ if eq .Lang "zh-cn" }}评论内容 *{{ else }}Comment *{{ end }}</label>
-                    {{ if eq .Lang "zh-cn" }}
-                    <textarea id="comment-content" name="content" placeholder="请输入您的评论..." required rows="5"></textarea>
-                    {{ else }}
-                    <textarea id="comment-content" name="content" placeholder="Write your comment..." required rows="5"></textarea>
-                    {{ end }}
+                    <textarea id="comment-content" name="content" maxlength="2000" rows="5" required></textarea>
                 </div>
-                <div class="form-group">
-                    <label for="comment-images">{{ if eq .Lang "zh-cn" }}上传图片（可选）{{ else }}Upload Images (Optional){{ end }}</label>
-                    <input type="file" id="comment-images" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" multiple style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />
-                    <div id="image-preview" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+
+                <div class="comment-actions comment-form-actions">
                     <button type="button" class="btn-cancel" onclick="closeCommentForm()">{{ if eq .Lang "zh-cn" }}取消{{ else }}Cancel{{ end }}</button>
-                    <button type="submit" class="btn-submit">{{ if eq .Lang "zh-cn" }}提交评论{{ else }}Submit{{ end }}</button>
+                    <button type="submit" class="btn-submit">{{ if eq .Lang "zh-cn" }}提交审核{{ else }}Submit for Review{{ end }}</button>
                 </div>
-                <div id="comment-status" style="margin-top: 10px; text-align: center; color: #999;"></div>
+                <div id="comment-status"></div>
             </form>
         </div>
     </div>
-</div>
+</section>
 
 <style>
-.article-comments {
-    margin-top: 60px;
-    padding-top: 40px;
-    border-top: 2px solid #f0f0f0;
-}
-
-.article-comments h3 {
-    margin: 0 0 30px 0;
-    font-size: 20px;
-    font-weight: 700;
-}
-
-.comments-container {
-    margin-bottom: 40px;
-}
-
-.btn-open-comment-form {
-    background: #2b579a;
-    color: white;
-    padding: 12px 32px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 15px;
-    transition: all 0.3s;
-    box-shadow: 0 2px 8px rgba(43, 87, 154, 0.2);
-}
-
-.btn-open-comment-form:hover {
-    background: #1e4073;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(43, 87, 154, 0.3);
-}
-
-.comment-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.comment-modal-content {
-    background: white;
-    border-radius: 12px;
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    animation: modalSlideIn 0.3s ease-out;
-}
-
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-50px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.comment-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 25px;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.comment-modal-header h4 {
-    margin: 0;
-    font-size: 18px;
-    color: #333;
-}
-
-.comment-modal-close {
-    background: transparent;
-    border: none;
-    font-size: 24px;
-    color: #999;
-    cursor: pointer;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.comment-modal-close:hover {
-    background: #f0f0f0;
-    color: #333;
-}
-
-#comment-form {
-    padding: 25px;
-}
-
-.comment-item {
-    padding: 20px;
-    margin-bottom: 15px;
-    background: #f9f9f9;
-    border-radius: 8px;
-    border-left: 3px solid #2b579a;
-}
-
-.comment-children {
-    margin-left: 30px;
-    padding-left: 15px;
-    border-left: 2px dashed #e0e0e0;
-}
-
-.comment-reply-btn {
-    background: transparent;
-    border: none;
-    color: #2b579a;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 0;
-    margin-right: 15px;
-}
-
-.comment-reply-btn:hover {
-    text-decoration: underline;
-}
-
-.comment-translate-btn {
-    background: transparent;
-    border: none;
-    color: #ff9800;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 0;
-}
-
-.comment-translate-btn:hover {
-    text-decoration: underline;
-}
-
-.comment-translate-btn:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-}
-
-.comment-actions {
-    margin-top: 8px;
-    display: flex;
-    gap: 10px;
-}
-
-.comment-translation {
-    margin-top: 10px;
-}
-
-.comment-reply-cancel {
-    margin-left: 10px;
-    background: transparent;
-    border: none;
-    color: #f44336;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.comment-item.pending {
-    background: #fffbf0;
-    border-left-color: #ff9800;
-}
-
-.comment-author {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 5px;
-}
-
-.comment-meta {
-    font-size: 12px;
-    color: #999;
-    margin-bottom: 10px;
-}
-
-.comment-status {
-    display: inline-block;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 3px;
-    margin-left: 10px;
-    font-weight: 600;
-}
-
-.comment-status.approved {
-    background: #c8e6c9;
-    color: #2e7d32;
-}
-
-.comment-status.pending {
-    background: #ffe0b2;
-    color: #e65100;
-}
-
-.comment-content {
-    color: #555;
-    line-height: 1.6;
-    word-break: break-word;
-}
-
-.comment-form-wrapper {
-    background: #f5f5f5;
-    padding: 30px;
-    border-radius: 8px;
-    margin-top: 40px;
-}
-
-.comment-form-wrapper h4 {
-    margin: 0 0 20px 0;
-    font-size: 16px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-    font-size: 14px;
-    color: #333;
-}
-
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: #2b579a;
-    box-shadow: 0 0 0 2px rgba(43, 87, 154, 0.1);
-}
-
-.btn-submit {
-    background: #2b579a;
-    color: white;
-    padding: 10px 24px;
-    border: none;
-    border-radius: 4px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background 0.3s;
-}
-
-.btn-submit:hover {
-    background: #1e4073;
-}
-
-.btn-submit:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-}
-
-.btn-cancel {
-    background: #f5f5f5;
-    color: #666;
-    padding: 10px 24px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.3s;
-}
-
-.btn-cancel:hover {
-    background: #e0e0e0;
-    border-color: #ccc;
-}
-
-#comment-status {
-    display: block;
-}
-
-@media (max-width: 768px) {
-    .article-comments {
-        margin-top: 40px;
-        padding-top: 30px;
-    }
-
-    .comment-form-wrapper {
-        padding: 20px;
-    }
-}
+.article-comments { margin-top: 56px; padding-top: 28px; border-top: 1px solid rgba(217, 121, 161, 0.22); }
+.comments-card { padding: clamp(16px, 2vw, 24px); border-radius: 22px; border: 1px solid rgba(255,255,255,0.62); background: linear-gradient(165deg, rgba(255,249,252,0.92), rgba(246,229,237,0.82)); box-shadow: 0 20px 50px rgba(83, 46, 66, 0.10); }
+.comments-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+.comments-head h3 { margin: 0; font-size: 1.3rem; color: #392430; }
+.comments-head p { margin: 6px 0 0; color: rgba(82,58,71,0.72); font-size: 0.92rem; }
+.comments-container { display: grid; gap: 14px; }
+.comment-empty { text-align: center; color: rgba(82,58,71,0.58); padding: 34px 12px; }
+.btn-open-comment-form, .btn-submit, .btn-secondary, .btn-cancel { border: 0; border-radius: 14px; padding: 11px 16px; font: inherit; font-weight: 700; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.btn-open-comment-form, .btn-submit { color: #fff; background: linear-gradient(135deg, #d979a1, #b85d84); box-shadow: 0 12px 24px rgba(184, 93, 132, 0.24); }
+.btn-secondary, .btn-cancel { color: #694356; background: rgba(255,255,255,0.74); border: 1px solid rgba(217, 121, 161, 0.2); }
+.btn-open-comment-form:hover, .btn-submit:hover, .btn-secondary:hover, .btn-cancel:hover { transform: translateY(-1px); }
+.btn-submit:disabled, .btn-secondary:disabled { opacity: .62; cursor: not-allowed; transform: none; }
+.comment-modal { margin-top: 18px; padding: 0; background: transparent; }
+.comment-modal-content { width: min(760px, 100%); margin: 0 auto; overflow: visible; border-radius: 22px; background: #fff8fb; box-shadow: 0 22px 60px rgba(49, 25, 37, 0.18); animation: commentModalIn .24s ease-out both; border: 1px solid rgba(217,121,161,.2); }
+@keyframes commentModalIn { from { opacity: 0; transform: translateY(18px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.comment-modal-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid rgba(217, 121, 161, 0.18); }
+.comment-modal-header h4 { margin: 0; color: #392430; }
+.comment-modal-close { width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(217,121,161,.12); color: #7c4b61; cursor: pointer; font-size: 22px; }
+#comment-form { padding: 22px; }
+#comment-website { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 7px; color: #4a3140; font-size: .92rem; font-weight: 700; }
+.form-group small { display: block; margin-top: 6px; color: rgba(82,58,71,.62); font-size: .78rem; }
+.form-group input, .form-group textarea { width: 100%; border: 1px solid rgba(217,121,161,.24); border-radius: 14px; background: rgba(255,255,255,.84); color: #392430; padding: 11px 12px; font: inherit; outline: none; box-sizing: border-box; }
+.form-group input:focus, .form-group textarea:focus { border-color: rgba(184,93,132,.72); box-shadow: 0 0 0 3px rgba(217,121,161,.16); }
+.email-code-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+.replying-to { margin-bottom: 14px; padding: 10px 12px; border-radius: 14px; background: rgba(217,121,161,.10); color: #694356; }
+.replying-to button { margin-left: 8px; border: 0; background: transparent; color: #b85d84; cursor: pointer; font-weight: 700; }
+.comment-item { padding: 16px; border-radius: 18px; border: 1px solid rgba(217,121,161,.16); border-left: 4px solid rgba(217,121,161,.72); background: rgba(255,255,255,.58); animation: commentRise .36s ease both; }
+@keyframes commentRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.comment-author { font-weight: 800; color: #392430; margin-bottom: 4px; }
+.comment-meta { font-size: .8rem; color: rgba(82,58,71,.58); margin-bottom: 10px; }
+.comment-content { color: rgba(57,40,51,.92); line-height: 1.72; word-break: break-word; }
+.comment-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.comment-form-actions { justify-content: flex-end; margin-top: 4px; }
+.comment-reply-btn { border: 0; background: transparent; color: #b85d84; cursor: pointer; padding: 0; font-weight: 700; }
+.comment-children { margin-left: 22px; padding-left: 16px; border-left: 2px dashed rgba(217,121,161,.26); display: grid; gap: 12px; }
+#comment-status { min-height: 22px; margin-top: 12px; text-align: center; font-size: .9rem; color: rgba(82,58,71,.72); }
+[data-scheme="dark"] .comments-card, [data-scheme="dark"] .comment-modal-content { background: linear-gradient(165deg, rgba(40,31,41,.96), rgba(57,39,51,.92)); border-color: rgba(247,198,199,.14); }
+[data-scheme="dark"] .comments-head h3, [data-scheme="dark"] .comment-modal-header h4, [data-scheme="dark"] .comment-author, [data-scheme="dark"] .form-group label { color: #f4e3eb; }
+[data-scheme="dark"] .comments-head p, [data-scheme="dark"] .comment-empty, [data-scheme="dark"] .comment-meta, [data-scheme="dark"] .comment-content, [data-scheme="dark"] .form-group small { color: rgba(236,220,228,.78); }
+[data-scheme="dark"] .comment-item { background: rgba(255,255,255,.05); border-color: rgba(247,198,199,.14); }
+[data-scheme="dark"] .form-group input, [data-scheme="dark"] .form-group textarea { background: rgba(255,255,255,.07); color: #f4e3eb; border-color: rgba(247,198,199,.18); }
+@media (max-width: 720px) { .comments-head, .form-grid, .email-code-row { grid-template-columns: 1fr; display: grid; } .btn-open-comment-form { width: 100%; } .comment-children { margin-left: 8px; padding-left: 10px; } }
 </style>
 
 <script>
-    const currentPostPath = '{{ .File.Path }}';
+(function () {
+    const currentPostPath = '{{ with .File }}{{ .Path }}{{ end }}';
     const isZhCN = '{{ .Lang }}' === 'zh-cn';
-    const currentPostTitle = document.title || '{{ .Title }}';
-    
+    const rootEl = document.querySelector('.article-comments');
+    const apiBase = rootEl && rootEl.dataset.apiBase ? rootEl.dataset.apiBase.trim().replace(/\/$/, '') : '';
+    let captchaToken = '';
+    let webrtcPublicIPs = [];
+
     const i18n = {
-        noComments: isZhCN ? '暂无评论，虚位以待' : 'No comments yet. Be the first!',
-        loadFailed: isZhCN ? '拉取评论失败' : 'Failed to load comments',
-        loadError: isZhCN ? '加载评论出错:' : 'Error loading comments:',
-        fillAll: isZhCN ? '⚠️ 请填写所有字段' : '⚠️ Please fill in all fields',
-        submitting: isZhCN ? '⏳ 提交中...' : '⏳ Submitting...',
-        uploadingImages: isZhCN ? '⏳ 正在上传图片...' : '⏳ Uploading images...',
-        submitSuccess: isZhCN ? '✅ 评论提交成功！等待审核后将显示在页面上。' : '✅ Comment submitted! It will appear after approval.',
+        noComments: isZhCN ? '暂无评论，虚位以待' : 'No comments yet.',
+        loadFailed: isZhCN ? '评论加载失败' : 'Failed to load comments',
+        fillAll: isZhCN ? '请填写姓名、手机号、邮箱、验证码和评论内容' : 'Please complete all required fields',
+        sending: isZhCN ? '正在发送验证码...' : 'Sending verification code...',
+        sent: isZhCN ? '验证码已发送，请检查邮箱' : 'Verification code sent. Check your email.',
+        sendFailed: isZhCN ? '验证码发送失败：服务器尚未配置 SMTP 发信账号，请先在后台配置邮箱服务。' : 'Failed to send code: SMTP mail service is not configured on the server.',
+        submitting: isZhCN ? '正在提交审核...' : 'Submitting for review...',
+        submitSuccess: isZhCN ? '评论已提交，审核通过后会显示在页面下方。' : 'Comment submitted and will appear after moderation.',
         submitFailed: isZhCN ? '提交失败' : 'Submission failed',
-        redirectGithubIssue: isZhCN ? '🔗 正在跳转到 GitHub 提交评论...' : '🔗 Redirecting to GitHub issue form...',
-        submitApiMissing: isZhCN ? '❌ 评论提交服务未配置。' : '❌ Comment submission service is not configured.',
-        networkError: isZhCN ? '❌ 网络错误:' : '❌ Network error:',
-        approved: isZhCN ? '✓ 已批准' : '✓ Approved',
-        reply: isZhCN ? '回复' : 'Reply',
-        translate: isZhCN ? '翻译' : 'Translate',
-        showOriginal: isZhCN ? '显示原文' : 'Show Original',
-        translating: isZhCN ? '翻译中...' : 'Translating...',
-        translateFailed: isZhCN ? '翻译失败' : 'Translation failed'
+        captchaWrong: isZhCN ? '流量筛查答案错误，请按题目重新计算。' : 'Traffic check answer is incorrect. Please solve the new question.',
+        captchaExpired: isZhCN ? '流量筛查已刷新，请重新填写答案。' : 'Traffic check refreshed. Please answer again.',
+        approved: isZhCN ? '已审核' : 'Approved',
+        reply: isZhCN ? '回复' : 'Reply'
     };
-    
-    function openCommentForm() {
-        document.getElementById('comment-modal').style.display = 'flex';
+
+    function api(path) {
+        return apiBase + path;
     }
-    
-    function closeCommentForm() {
+
+    function setStatus(text, color) {
+        const el = document.getElementById('comment-status');
+        if (!el) return;
+        el.textContent = text || '';
+        el.style.color = color || '';
+    }
+
+    window.openCommentForm = async function () {
+        const modal = document.getElementById('comment-modal');
+        modal.style.display = 'block';
+        await loadChallenge();
+        collectWebRTCIPs();
+        modal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const first = document.getElementById('comment-name');
+        if (first) setTimeout(function () { first.focus({ preventScroll: true }); }, 220);
+    };
+
+    window.closeCommentForm = function () {
         document.getElementById('comment-modal').style.display = 'none';
         document.getElementById('comment-form').reset();
-        document.getElementById('image-preview').innerHTML = '';
         cancelReply();
-        document.getElementById('comment-status').textContent = '';
-    }
-    
-    // 图片预览
-    document.addEventListener('DOMContentLoaded', function() {
-        const imageInput = document.getElementById('comment-images');
-        if (imageInput) {
-            imageInput.addEventListener('change', function() {
-                const preview = document.getElementById('image-preview');
-                preview.innerHTML = '';
-                
-                Array.from(this.files).forEach((file, index) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const imgWrapper = document.createElement('div');
-                        imgWrapper.style.position = 'relative';
-                        imgWrapper.innerHTML = `
-                            <img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;" />
-                            <button type="button" onclick="removePreviewImage(${index})" style="position: absolute; top: -5px; right: -5px; background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; line-height: 1;">×</button>
-                        `;
-                        preview.appendChild(imgWrapper);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            });
-        }
-    });
-    
-    function removePreviewImage(index) {
-        const imageInput = document.getElementById('comment-images');
-        const dt = new DataTransfer();
-        
-        Array.from(imageInput.files).forEach((file, i) => {
-            if (i !== index) dt.items.add(file);
-        });
-        
-        imageInput.files = dt.files;
-        imageInput.dispatchEvent(new Event('change'));
-    }
-    
-    // 点击模态窗口外部关闭
-    document.addEventListener('click', function(event) {
-        const modal = document.getElementById('comment-modal');
-        if (event.target === modal) {
-            closeCommentForm();
-        }
-    });
-    
-    const commentModalEl = document.getElementById('comment-modal');
-    const apiBase = (commentModalEl && commentModalEl.dataset && commentModalEl.dataset.apiBase) ? commentModalEl.dataset.apiBase.trim() : '';
-    const githubRepo = (commentModalEl && commentModalEl.dataset && commentModalEl.dataset.githubRepo) ? commentModalEl.dataset.githubRepo.trim() : '';
-    const githubLabelApproved = (commentModalEl && commentModalEl.dataset && commentModalEl.dataset.githubLabelApproved) ? commentModalEl.dataset.githubLabelApproved.trim() : 'approved';
-    const githubLabelPending = (commentModalEl && commentModalEl.dataset && commentModalEl.dataset.githubLabelPending) ? commentModalEl.dataset.githubLabelPending.trim() : 'pending';
-    const githubLabelComment = (commentModalEl && commentModalEl.dataset && commentModalEl.dataset.githubLabelComment) ? commentModalEl.dataset.githubLabelComment.trim() : 'comment';
-    function buildApiUrl(path) {
-        if (!apiBase) return path;
-        return apiBase.replace(/\/$/, '') + path;
-    }
+        setStatus('');
+        loadChallenge();
+    };
 
-    function useGithubComments() {
-        return !!githubRepo;
-    }
-
-    function isLocalDevHost() {
-        const host = window.location.hostname || '';
-        return host === 'localhost' || host === '127.0.0.1';
-    }
-
-    function resolveSubmitApiUrl() {
-        if (apiBase) {
-            return buildApiUrl('/api');
-        }
-        if (isLocalDevHost()) {
-            return 'http://127.0.0.1:8080/api';
-        }
-        return '';
-    }
-
-    function buildGithubIssueUrl(commentData) {
-        if (!githubRepo) return '';
-
-        const params = new URLSearchParams();
-        params.set('title', '[Comment] ' + (commentData.post_title || commentData.post_path || 'Comment'));
-
-        const bodyLines = [
-            'Post: ' + (commentData.post_path || ''),
-            'Author: ' + (commentData.author || ''),
-            'Email: ' + (commentData.email || ''),
-            '',
-            'Content:',
-            commentData.content || ''
-        ];
-
-        if (commentData.parent_id) {
-            bodyLines.splice(3, 0, 'Parent ID: ' + commentData.parent_id);
-        }
-
-        params.set('body', bodyLines.join('\n'));
-
-        const labels = Array.isArray(commentData.github_labels) ? commentData.github_labels.filter(Boolean).join(',') : '';
-        if (labels) {
-            params.set('labels', labels);
-        }
-
-        return 'https://github.com/' + githubRepo + '/issues/new?' + params.toString();
-    }
-
-    function extractCommentField(body, fieldName) {
-        const regex = new RegExp('^' + fieldName + '\\s*:\\s*(.*)$', 'mi');
-        const match = body.match(regex);
-        return match ? match[1].trim() : '';
-    }
-
-    function extractCommentContent(body) {
-        const marker = 'Content:';
-        const idx = body.indexOf(marker);
-        if (idx === -1) return body.trim();
-        return body.slice(idx + marker.length).trim();
-    }
-
-    async function fetchJsonWithTimeout(url, timeoutMs) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(function () {
-            controller.abort();
-        }, timeoutMs);
-
+    async function loadChallenge() {
         try {
-            const response = await fetch(url, { signal: controller.signal });
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
-            }
-            return await response.json();
-        } finally {
-            clearTimeout(timeoutId);
+            const res = await fetch(api('/api/comments/challenge'), { cache: 'no-store' });
+            const data = await res.json();
+            const challenge = data && data.data ? data.data : {};
+            captchaToken = challenge.token || '';
+            document.getElementById('comment-captcha-question').textContent = challenge.question || '';
+            document.getElementById('comment-captcha-answer').value = '';
+        } catch (error) {
+            captchaToken = '';
+            document.getElementById('comment-captcha-question').textContent = '';
         }
     }
 
-    function isAbortError(error) {
-        return !!error && (error.name === 'AbortError' || String(error).indexOf('AbortError') !== -1);
+    window.sendEmailCode = async function () {
+        const email = document.getElementById('comment-email').value.trim();
+        const button = document.getElementById('send-email-code');
+        if (!email) {
+            setStatus(i18n.fillAll, '#b91c1c');
+            return;
+        }
+        button.disabled = true;
+        setStatus(i18n.sending);
+        try {
+            const res = await fetch(api('/api/comments/email-code'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json().catch(function () { return {}; });
+            if (!res.ok || !data.success) throw new Error(data.message || i18n.sendFailed);
+            setStatus(i18n.sent, '#15803d');
+        } catch (error) {
+            setStatus((error && error.message && error.message !== 'Email verification is not configured') ? error.message : i18n.sendFailed, '#b91c1c');
+        } finally {
+            setTimeout(function () { button.disabled = false; }, 5000);
+        }
+    };
+
+    async function browserFingerprint() {
+        const parts = [
+            navigator.userAgent || '',
+            navigator.language || '',
+            (navigator.languages || []).join(','),
+            screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
+            new Date().getTimezoneOffset(),
+            navigator.platform || '',
+            navigator.hardwareConcurrency || '',
+            navigator.deviceMemory || '',
+            !!window.chrome,
+            !!window.safari
+        ].join('|');
+        if (window.crypto && crypto.subtle) {
+            const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(parts));
+            return Array.from(new Uint8Array(bytes)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+        }
+        return btoa(unescape(encodeURIComponent(parts))).slice(0, 96);
     }
 
-    let commentsLoadStarted = false;
-
-    function normalizeComment(raw) {
-        return {
-            id: raw.id || raw.Id || '',
-            author: raw.author || raw.Author || '',
-            email: raw.email || raw.Email || '',
-            content: raw.content || raw.Content || '',
-            timestamp: raw.timestamp || raw.Time || '',
-            parent_id: raw.parent_id || raw.ParentID || '',
-            approved: (typeof raw.approved === 'boolean') ? raw.approved : (raw.Approved !== false),
-            images: raw.images || raw.Images || []
-        };
+    function collectWebRTCIPs() {
+        if (!window.RTCPeerConnection) return;
+        try {
+            const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc.createDataChannel('risk');
+            pc.onicecandidate = function (event) {
+                if (!event.candidate) {
+                    pc.close();
+                    return;
+                }
+                const matches = String(event.candidate.candidate || '').match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g) || [];
+                matches.forEach(function (ip) {
+                    if (!/^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\./.test(ip) && webrtcPublicIPs.indexOf(ip) === -1) {
+                        webrtcPublicIPs.push(ip);
+                    }
+                });
+            };
+            pc.createOffer().then(function (offer) { return pc.setLocalDescription(offer); }).catch(function () { pc.close(); });
+        } catch (error) {}
     }
 
     async function loadComments() {
-        if (commentsLoadStarted) return;
-        commentsLoadStarted = true;
-
-        const commentsListEl = document.getElementById('comments-list');
-        if (!commentsListEl) return;
-
+        const list = document.getElementById('comments-list');
+        if (!list) return;
         try {
-            if (useGithubComments()) {
-                const labels = encodeURIComponent(githubLabelComment + ',' + githubLabelApproved);
-                const apiUrl = 'https://api.github.com/repos/' + githubRepo + '/issues?state=open&per_page=100&labels=' + labels;
-                let issues = [];
-
-                try {
-                    issues = await fetchJsonWithTimeout(apiUrl, 8000);
-                } catch (e) {
-                    // GitHub API 超时或失败时，优先快速降级到本站 API。
-                    if (apiBase) {
-                        const fallback = await fetchJsonWithTimeout(buildApiUrl('/api/comments?path=' + encodeURIComponent(currentPostPath)), 8000);
-                        const fallbackData = Array.isArray(fallback.data) ? fallback.data.map(normalizeComment) : [];
-                        let fallbackHtml = '';
-                        if (fallbackData.length > 0) {
-                            const fallbackTree = buildCommentTree(fallbackData);
-                            fallbackTree.forEach(comment => {
-                                fallbackHtml += renderCommentItem(comment);
-                            });
-                        } else {
-                            fallbackHtml = '<div style="text-align: center; color: #999; padding: 40px;">' + i18n.noComments + '</div>';
-                        }
-                        commentsListEl.innerHTML = fallbackHtml;
-                        return;
-                    }
-
-                    throw e;
-                }
-
-                let html = '';
-                const filtered = Array.isArray(issues) ? issues.filter(issue => {
-                    if (!issue || !issue.body) return false;
-                    const postPath = extractCommentField(issue.body, 'Post');
-                    return postPath === currentPostPath;
-                }) : [];
-
-                if (filtered.length > 0) {
-                    const data = filtered.map(issue => {
-                            return normalizeComment({
-                                Id: String(issue.id),
-                                Author: extractCommentField(issue.body, 'Author') || (issue.user ? issue.user.login : 'GitHub'),
-                                Email: extractCommentField(issue.body, 'Email') || '',
-                                Content: extractCommentContent(issue.body),
-                                Time: issue.created_at || '',
-                                ParentID: '',
-                                Approved: true
-                            });
-                    });
-                    const tree = buildCommentTree(data);
-                    tree.forEach(comment => {
-                        html += renderCommentItem(comment);
-                    });
-                } else {
-                    html = '<div style="text-align: center; color: #999; padding: 40px;">' + i18n.noComments + '</div>';
-                }
-
-                commentsListEl.innerHTML = html;
-            } else {
-                const data = await fetchJsonWithTimeout(buildApiUrl('/api/comments?path=' + encodeURIComponent(currentPostPath)), 8000);
-                
-                let html = '';
-                if (data.data && data.data.length > 0) {
-                    const normalizedData = data.data.map(normalizeComment);
-                    const tree = buildCommentTree(normalizedData);
-                    tree.forEach(comment => {
-                        html += renderCommentItem(comment);
-                    });
-                } else {
-                    html = '<div style="text-align: center; color: #999; padding: 40px;">' + i18n.noComments + '</div>';
-                }
-                
-                commentsListEl.innerHTML = html;
-            }
-        } catch (e) {
-            commentsListEl.innerHTML = '<div style="color: red; padding: 20px;">' + i18n.loadFailed + '</div>';
-            if (isAbortError(e)) {
-                // 中断请求（超时或页面切换）属于可预期行为，避免输出误导性错误。
+            const res = await fetch(api('/api/comments?path=' + encodeURIComponent(currentPostPath)), { cache: 'no-store' });
+            const data = await res.json();
+            const comments = Array.isArray(data.data) ? data.data.map(normalizeComment) : [];
+            if (!comments.length) {
+                list.innerHTML = '<div class="comment-empty">' + i18n.noComments + '</div>';
                 return;
             }
-            console.error(i18n.loadError, e);
-        } finally {
-            // 加载失败后允许手动重试。
-            commentsLoadStarted = false;
+            list.innerHTML = buildCommentTree(comments).map(renderCommentItem).join('');
+        } catch (error) {
+            list.innerHTML = '<div class="comment-empty">' + i18n.loadFailed + '</div>';
         }
     }
 
-    async function submitComment(event) {
+    window.submitComment = async function (event) {
         event.preventDefault();
-        
-        const name = document.getElementById('comment-name').value.trim();
-        const email = document.getElementById('comment-email').value.trim();
-        const content = document.getElementById('comment-content').value.trim();
-        const parentId = document.getElementById('comment-parent-id').value;
-        const imageInput = document.getElementById('comment-images');
-        const statusEl = document.getElementById('comment-status');
         const submitBtn = event.target.querySelector('.btn-submit');
-        
-        if (!name || !email || !content) {
-            statusEl.textContent = i18n.fillAll;
-            statusEl.style.color = '#f44336';
+        if (!captchaToken) {
+            await loadChallenge();
+            setStatus(i18n.captchaExpired, '#b91c1c');
             return;
         }
-
+        const payload = {
+            post_path: currentPostPath,
+            author: document.getElementById('comment-name').value.trim(),
+            phone: document.getElementById('comment-phone').value.trim(),
+            email: document.getElementById('comment-email').value.trim(),
+            email_code: document.getElementById('comment-email-code').value.trim(),
+            captcha_token: captchaToken,
+            captcha_answer: document.getElementById('comment-captcha-answer').value.trim(),
+            content: document.getElementById('comment-content').value.trim(),
+            parent_id: document.getElementById('comment-parent-id').value,
+            website: document.getElementById('comment-website').value,
+            fingerprint: await browserFingerprint(),
+            webrtc_public_ips: webrtcPublicIPs
+        };
+        if (!payload.author || !payload.phone || !payload.email || !payload.email_code || !payload.captcha_answer || !payload.content) {
+            setStatus(i18n.fillAll, '#b91c1c');
+            return;
+        }
         submitBtn.disabled = true;
-        statusEl.textContent = i18n.submitting;
-        statusEl.style.color = '#ff9800';
-
+        setStatus(i18n.submitting);
         try {
-            // 准备评论数据
-            const commentData = {
-                post_path: currentPostPath,
-                post_title: document.title || currentPostPath,
-                author: name,
-                email: email,
-                content: content,
-                parent_id: parentId || '',
-                use_github: useGithubComments(),
-                github_repo: githubRepo,
-                github_labels: [githubLabelComment, githubLabelPending]
-            };
-
-            const submitApiUrl = resolveSubmitApiUrl();
-            if (!submitApiUrl) {
-                if (useGithubComments()) {
-                    const issueUrl = buildGithubIssueUrl(commentData);
-                    if (issueUrl) {
-                        statusEl.textContent = i18n.redirectGithubIssue;
-                        statusEl.style.color = '#4CAF50';
-                        const opened = window.open(issueUrl, '_blank', 'noopener');
-                        if (!opened) {
-                            window.location.href = issueUrl;
-                        }
-                        return;
-                    }
-                }
-
-                statusEl.textContent = i18n.submitApiMissing;
-                statusEl.style.color = '#f44336';
-                return;
-            }
-            
-            // 提交评论到后端API
-            const response = await fetch(submitApiUrl, {
+            const res = await fetch(api('/api/comments/add?path=' + encodeURIComponent(currentPostPath)), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(commentData)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
-            
-            // 先检查响应状态
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                statusEl.textContent = i18n.submitSuccess;
-                statusEl.style.color = '#4CAF50';
-                
-                // 延迟关闭模态窗口并重新加载评论
-                setTimeout(() => {
-                    closeCommentForm();
-                    loadComments();
-                }, 2000);
+            const data = await res.json().catch(function () { return {}; });
+            if (!res.ok || !data.success) throw new Error(data.message || i18n.submitFailed);
+            setStatus(i18n.submitSuccess, '#15803d');
+            setTimeout(function () {
+                closeCommentForm();
+                loadComments();
+            }, 1600);
+        } catch (error) {
+            const message = String((error && error.message) || i18n.submitFailed);
+            if (message.toLowerCase().indexOf('captcha') !== -1) {
+                setStatus(i18n.captchaWrong, '#b91c1c');
             } else {
-                statusEl.textContent = '❌ ' + (data.message || i18n.submitFailed);
-                statusEl.style.color = '#f44336';
+                setStatus(message, '#b91c1c');
             }
-        } catch (e) {
-            statusEl.textContent = i18n.networkError + ' ' + e;
-            statusEl.style.color = '#f44336';
-            console.error(i18n.loadError, e);
+            await loadChallenge();
         } finally {
             submitBtn.disabled = false;
         }
-    }
+    };
 
-    function escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
+    function normalizeComment(raw) {
+        return {
+            id: raw.id || '',
+            author: raw.author || '',
+            content: raw.content || '',
+            timestamp: raw.timestamp || '',
+            parent_id: raw.parent_id || ''
         };
-        return text.replace(/[&<>"']/g, m => map[m]);
     }
 
     function buildCommentTree(comments) {
         const map = {};
         const roots = [];
-        comments.forEach(c => {
-            c.children = [];
-            map[c.id] = c;
+        comments.forEach(function (comment) {
+            comment.children = [];
+            map[comment.id] = comment;
         });
-        comments.forEach(c => {
-            if (c.parent_id && map[c.parent_id]) {
-                map[c.parent_id].children.push(c);
+        comments.forEach(function (comment) {
+            if (comment.parent_id && map[comment.parent_id]) {
+                map[comment.parent_id].children.push(comment);
             } else {
-                roots.push(c);
+                roots.push(comment);
             }
         });
         return roots;
     }
 
     function renderCommentItem(comment) {
-        const safeAuthor = (comment.author || '').replace(/'/g, "\\'");
-        
-        // 渲染图片
-        let imagesHtml = '';
-        if (comment.images && comment.images.length > 0) {
-            imagesHtml = '<div class="comment-images" style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">';
-            comment.images.forEach(url => {
-                imagesHtml += `<img src="${escapeHtml(url)}" style="max-width: 200px; max-height: 200px; border-radius: 4px; cursor: pointer; object-fit: cover;" onclick="window.open('${escapeHtml(url)}', '_blank')" />`;
-            });
-            imagesHtml += '</div>';
-        }
-        
-        let html = `
-            <div class="comment-item">
-                <div class="comment-author">
-                    ${escapeHtml(comment.author)}
-                    <span class="comment-status approved">${i18n.approved}</span>
-                </div>
-                <div class="comment-meta">
-                    ${comment.timestamp}
-                </div>
-                <div class="comment-content" id="comment-content-${comment.id}">
-                    ${escapeHtml(comment.content).replace(/\n/g, '<br>')}
-                </div>
-                ${imagesHtml}
-                <div class="comment-actions">
-                    <button class="comment-reply-btn" onclick="startReply('${comment.id}', '${safeAuthor}')">${i18n.reply}</button>
-                    <button class="comment-translate-btn" id="translate-btn-${comment.id}" onclick="toggleTranslate('${comment.id}', \`${escapeHtml(comment.content).replace(/`/g, '\\`')}\`)">${i18n.translate}</button>
-                </div>
-                <div class="comment-translation" id="translation-${comment.id}" style="display: none;"></div>
-            </div>
-        `;
-        if (comment.children && comment.children.length > 0) {
-            html += '<div class="comment-children">';
-            comment.children.forEach(child => {
-                html += renderCommentItem(child);
-            });
-            html += '</div>';
+        const safeAuthor = escapeHtml(comment.author).replace(/'/g, '&#39;');
+        let html = '<article class="comment-item">' +
+            '<div class="comment-author">' + escapeHtml(comment.author) + '</div>' +
+            '<div class="comment-meta">' + escapeHtml(comment.timestamp) + ' · ' + i18n.approved + '</div>' +
+            '<div class="comment-content">' + escapeHtml(comment.content).replace(/\n/g, '<br>') + '</div>' +
+            '<div class="comment-actions"><button class="comment-reply-btn" type="button" onclick="startReply(\'' + escapeAttr(comment.id) + '\', \'' + safeAuthor + '\')">' + i18n.reply + '</button></div>' +
+            '</article>';
+        if (comment.children && comment.children.length) {
+            html += '<div class="comment-children">' + comment.children.map(renderCommentItem).join('') + '</div>';
         }
         return html;
     }
 
-    function startReply(commentId, author) {
+    window.startReply = function (commentId, author) {
         document.getElementById('comment-parent-id').value = commentId;
         document.getElementById('replying-to-name').textContent = author;
         document.getElementById('replying-to').style.display = 'block';
         openCommentForm();
-        document.getElementById('comment-content').focus();
-    }
+    };
 
-    function cancelReply() {
+    window.cancelReply = function () {
         document.getElementById('comment-parent-id').value = '';
         document.getElementById('replying-to').style.display = 'none';
         document.getElementById('replying-to-name').textContent = '';
+    };
+
+    function escapeHtml(input) {
+        return String(input || '').replace(/[&<>"']/g, function (ch) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+        });
     }
 
-    // 翻译功能
-    async function toggleTranslate(commentId, originalText) {
-        const translationDiv = document.getElementById('translation-' + commentId);
-        const translateBtn = document.getElementById('translate-btn-' + commentId);
-        const contentDiv = document.getElementById('comment-content-' + commentId);
-        
-        // 如果已经显示翻译，则切换回原文
-        if (translationDiv.style.display !== 'none') {
-            translationDiv.style.display = 'none';
-            contentDiv.style.display = 'block';
-            translateBtn.textContent = i18n.translate;
-            return;
-        }
-        
-        // 如果已经翻译过，直接显示
-        if (translationDiv.dataset.translated === 'true') {
-            translationDiv.style.display = 'block';
-            contentDiv.style.display = 'none';
-            translateBtn.textContent = i18n.showOriginal;
-            return;
-        }
-        
-        // 开始翻译
-        translateBtn.textContent = i18n.translating;
-        translateBtn.disabled = true;
-        
-        try {
-            const targetLang = isZhCN ? 'zh-CN' : 'en';
-            const response = await fetch('/api/translate_text', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: originalText,
-                    sourceLang: 'auto',
-                    targetLang
-                })
-            });
-            const data = await response.json();
-            
-            if (response.ok && data && data.success && data.data && data.data.translated) {
-                const translatedText = String(data.data.translated);
-                translationDiv.innerHTML = '<div style="padding: 10px; background: #f0f8ff; border-left: 3px solid #2b579a; border-radius: 4px; margin-top: 10px;">' + 
-                    escapeHtml(translatedText).replace(/\n/g, '<br>') + '</div>';
-                translationDiv.dataset.translated = 'true';
-                translationDiv.style.display = 'block';
-                contentDiv.style.display = 'none';
-                translateBtn.textContent = i18n.showOriginal;
-            } else {
-                throw new Error((data && data.message) ? data.message : 'Translation failed');
-            }
-        } catch (e) {
-            translationDiv.innerHTML = '<div style="color: #f44336; font-size: 12px; margin-top: 5px;">' + i18n.translateFailed + '</div>';
-            translationDiv.style.display = 'block';
-            translateBtn.textContent = i18n.translate;
-            console.error('Translation error:', e);
-        } finally {
-            translateBtn.disabled = false;
-        }
+    function escapeAttr(input) {
+        return String(input || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
 
-    function scheduleCommentsLoad() {
-        const commentsContainer = document.getElementById('comments-list');
-        if (!commentsContainer) return;
-
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver(function (entries) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        observer.disconnect();
-                        loadComments();
-                    }
-                });
-            }, { rootMargin: '300px 0px' });
-
-            observer.observe(commentsContainer);
-            return;
-        }
-
-        // 不支持 IntersectionObserver 时，延后执行，避免首屏竞争。
-        setTimeout(loadComments, 300);
-    }
-
-    // 页面加载后按需触发评论加载（避免重复请求和首屏阻塞）。
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', scheduleCommentsLoad, { once: true });
+        document.addEventListener('DOMContentLoaded', loadComments, { once: true });
     } else {
-        scheduleCommentsLoad();
+        loadComments();
     }
+})();
 </script>
 {{ end }}

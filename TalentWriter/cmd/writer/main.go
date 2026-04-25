@@ -12,9 +12,13 @@ import (
 	"syscall"
 	"time"
 
+	"vantalens/talentwriter/internal/analytics"
+	"vantalens/talentwriter/internal/article"
 	"vantalens/talentwriter/internal/auth"
+	"vantalens/talentwriter/internal/comment"
 	"vantalens/talentwriter/internal/config"
 	"vantalens/talentwriter/internal/email"
+	"vantalens/talentwriter/internal/handlers"
 	"vantalens/talentwriter/internal/server"
 )
 
@@ -38,11 +42,32 @@ func main() {
 	config.SetConfig(cfg)
 
 	auth.InitJWTSecret()
+	if err := analytics.Init(hugoPath); err != nil {
+		log.Fatalf("[ANALYTICS] init failed: %v", err)
+	}
+	if err := comment.Init(hugoPath); err != nil {
+		log.Fatalf("[COMMENTS] init failed: %v", err)
+	}
+	if err := article.Init(hugoPath); err != nil {
+		log.Fatalf("[ARTICLES] init failed: %v", err)
+	}
+	if posts, err := handlers.SyncArticlesToDatabase(); err != nil {
+		log.Printf("[ARTICLES] initial sync skipped: %v", err)
+	} else {
+		log.Printf("[ARTICLES] initial sync completed: %d posts", len(posts))
+	}
 	email.StartWorkers()
 
 	addr := fmt.Sprintf(":%d", port)
 	mux := server.BuildMux(server.ModeWriter, Version)
-	srv := &http.Server{Addr: addr, Handler: mux}
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           server.WithSecurityHeaders(mux),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       90 * time.Second,
+	}
 
 	log.Printf("[WRITER] mode=writer, addr=%s, hugo_path=%s", addr, hugoPath)
 

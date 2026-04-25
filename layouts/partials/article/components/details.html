@@ -1,7 +1,9 @@
+{{- $IsList := .IsList -}}
+{{- $Page := .Page -}}
 <div class="article-details">
-    {{ if .Params.categories }}
+    {{ if $Page.Params.categories }}
     <header class="article-category">
-        {{ range (.GetTerms "categories") }}
+        {{ range ($Page.GetTerms "categories") }}
             <a href="{{ .RelPermalink }}" {{ with .Params.style }}style="background-color: {{ .background }}; color: {{ .color }};"{{ end }}>
                 {{ .LinkTitle }}
             </a>
@@ -11,38 +13,36 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="{{ .RelPermalink }}">
-                {{- .Title -}}
+            <a href="{{ $Page.RelPermalink }}">
+                {{- $Page.Title -}}
             </a>
         </h2>
-    
-        {{ with .Params.description }}
+
+        {{ with $Page.Params.description }}
         <h3 class="article-subtitle">
             {{ . }}
         </h3>
         {{ end }}
     </div>
 
-    {{ $showDate := not .Date.IsZero }}
+    {{ $showDate := not $Page.Date.IsZero }}
     {{ if $showDate }}
     <footer class="article-time">
-        {{ if $showDate }}
-            <div>
-                {{ partial "helper/icon" "date" }}
-                <time class="article-time--published" datetime='{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}'>
-                    {{- .Date | time.Format (or .Site.Params.dateFormat.published "Jan 02, 2006") -}}
-                </time>
-            </div>
-        {{ end }}
+        <div>
+            {{ partial "helper/icon" "date" }}
+            <time class="article-time--published" datetime='{{ $Page.Date.Format "2006-01-02T15:04:05Z07:00" }}'>
+                {{- $Page.Date | time.Format (or $Page.Site.Params.dateFormat.published "Jan 02, 2006") -}}
+            </time>
+        </div>
     </footer>
     {{ end }}
 
-    {{ if .IsTranslated }}
+    {{ if $Page.IsTranslated }}
         <footer class="article-translations">
             {{ partial "helper/icon" "language" }}
             <div>
-                {{ range .Translations }}
-                    <a href="{{ .Permalink }}" class="link">{{ .Language.LanguageName }}</a>
+                {{ range $Page.Translations }}
+                    <a href="{{ .RelPermalink }}" class="link">{{ .Language.LanguageName }}</a>
                 {{ end }}
             </div>
         </footer>

@@ -1,4 +1,4 @@
-﻿package handlers
+package handlers
 
 import "strings"
 
@@ -86,6 +86,7 @@ func ControlHTML(writerURL string) string {
       </div>
       <div class="actions">
         <a class="btn primary" href="{{WRITER_URL}}">进入后端写作平台</a>
+        <a class="btn" href="/platform/analytics">访问监控</a>
         <button class="btn" onclick="refreshStatus()">刷新状态</button>
       </div>
     </section>
@@ -133,8 +134,8 @@ func ControlHTML(writerURL string) string {
         <div class="row">
           <button class="btn" onclick="runControl('backend','check')">后端健康巡检</button>
           <button class="btn" onclick="runControl('backend','routes')">后端路由巡检</button>
-          <button class="btn" onclick="runControl('backend','stop_writer')">关闭写作端口</button>
-          <button class="btn" onclick="runControl('backend','stop_control')">关闭总控端口</button>
+          <button class="btn" id="stop-writer-btn" onclick="runControl('backend','stop_writer')">关闭写作端口</button>
+          <button class="btn" id="stop-control-btn" onclick="runControl('backend','stop_control')">关闭总控端口</button>
         </div>
       </article>
 
@@ -213,11 +214,30 @@ func ControlHTML(writerURL string) string {
       return ok ? 'state ok' : 'state err';
     }
 
+    function setButtonState(id, disabled, label) {
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.disabled = !!disabled;
+      if (label) button.textContent = label;
+      button.style.opacity = disabled ? '0.55' : '1';
+      button.style.cursor = disabled ? 'not-allowed' : 'pointer';
+    }
+
     async function refreshStatus() {
       appendLog('请求 /api/control/status');
+      const headers = authHeaders();
+      if (!headers.Authorization) {
+        appendLog('状态获取失败: 未检测到登录 token，请先登录后台');
+        return;
+      }
       try {
-        const res = await fetch('/api/control/status');
+        const res = await fetch('/api/control/status', { headers });
         const data = await res.json();
+        if (isTokenInvalid(res, data)) {
+          clearAuthToken();
+          appendLog('登录态失效，请重新登录');
+          return;
+        }
         if (!res.ok || !data.success) {
           appendLog('状态获取失败: ' + (data.message || res.status));
           return;
@@ -234,6 +254,20 @@ func ControlHTML(writerURL string) string {
         document.getElementById('backend-check').className = 'value state ok';
         document.getElementById('backend-check').textContent = backend.service || 'online';
         document.getElementById('backend-path').textContent = backend.hugo_path || '-';
+        if (backend.preview_running) {
+          document.getElementById('frontend-preview').className = 'value state ok';
+          document.getElementById('frontend-preview').textContent = '已启动';
+        } else {
+          document.getElementById('frontend-preview').className = 'value state warn';
+          document.getElementById('frontend-preview').textContent = '未启动';
+        }
+        if (backend.launcher_mode === 'all') {
+          setButtonState('stop-writer-btn', true, '统一模式内嵌');
+          setButtonState('stop-control-btn', true, '请关闭程序窗口');
+        } else {
+          setButtonState('stop-writer-btn', false, '关闭写作端口');
+          setButtonState('stop-control-btn', false, '关闭总控端口');
+        }
         appendLog('状态更新完成');
       } catch (err) {
         appendLog('状态请求异常: ' + err.message);
@@ -277,6 +311,11 @@ func ControlHTML(writerURL string) string {
           const el = document.getElementById('frontend-preview');
           el.className = 'value ' + stateClass(ok);
           el.textContent = ok ? '已启动' : '失败';
+          const previewUrl = data?.data?.result?.preview_url;
+          if (ok && previewUrl) {
+            appendLog('预览地址: ' + previewUrl);
+            window.open(previewUrl, '_blank', 'noopener');
+          }
         }
         if (scope === 'backend' && action === 'routes') {
           const el = document.getElementById('backend-routes');
@@ -285,8 +324,14 @@ func ControlHTML(writerURL string) string {
         }
 
         if (scope === 'backend' && (action === 'stop_writer' || action === 'stop_control')) {
-          document.getElementById('backend-check').className = 'value state warn';
-          document.getElementById('backend-check').textContent = '正在关闭';
+          const message = String(data?.data?.result?.message || '');
+          if (message.includes('nothing to stop separately') || message.includes('close the program window instead')) {
+            document.getElementById('backend-check').className = 'value state warn';
+            document.getElementById('backend-check').textContent = '统一模式';
+          } else if (ok) {
+            document.getElementById('backend-check').className = 'value state warn';
+            document.getElementById('backend-check').textContent = '正在关闭';
+          }
         }
       } catch (err) {
         appendLog('请求异常: ' + err.message);
@@ -301,4 +346,3 @@ func ControlHTML(writerURL string) string {
 	page = strings.ReplaceAll(page, "{{WRITER_URL}}", writerURL)
 	return page
 }
- .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
