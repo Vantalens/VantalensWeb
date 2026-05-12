@@ -1,22 +1,11 @@
 ---
-tags:
-    - 动态规划
-    - DFS
-    - 费用流
-categories:
-    - 算法
-pinned: false
 title: "P1004 [NOIP 2000 提高组] 方格取数 分析与总结"
-description: "经典棋盘模型问题的多种解法分析：动态规划、DFS 记忆化和费用流"
 date: 2026-02-28T11:31:00+08:00
-image: ""
-math: true
-license: ""
-hidden: false
-comments: true
 draft: false
+pinned: false
+categories:
+  - 算法
 ---
-
 这是一道经典但具有一定难度的棋盘模型题。虽然是 2000 年的 NOIP 题目，但作为压轴题，对于第一次接触的人来说还是相当困难的。本文总结了三种不同的解法：动态规划、DFS 记忆化和最小费用最大流，从易到难逐步展开。
 
 ## 问题

@@ -10,6 +10,10 @@
 
 <link rel='canonical' href='{{ .Permalink }}'>
 
+{{- if .IsHome -}}
+    <link rel="preload" href="{{ "img/home-hero.jpg" | relURL }}" as="image" fetchpriority="high">
+{{- end -}}
+
 {{- partial "head/style.html" . -}}
 {{- partial "head/script.html" . -}}
 {{- partial "head/opengraph/include.html" . -}}
@@ -19,7 +23,7 @@
 {{- end -}}
 
 {{ with .Site.Params.favicon }}
-    <link rel="shortcut icon" href="{{ . | relURL }}" />
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ . | relURL }}">
 {{ end }}
 
 {{- partial "google_analytics.html" . -}}
