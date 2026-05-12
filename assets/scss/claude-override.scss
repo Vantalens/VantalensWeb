@@ -2,7 +2,7 @@
 /* === 滚动条 === */
 
 [data-scheme="dark"] body {
-  background: url('../img/home-hero.jpg') center center / cover no-repeat scroll !important;
+  background: url('../img/home-hero.jpg') center center / cover no-repeat fixed !important;
   color: var(--claude-warm-silver);
 }
 

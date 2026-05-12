@@ -189,14 +189,14 @@ body {
 body {
     width: 100%;
     min-height: 100vh;
-    background: linear-gradient(130deg, rgba(250, 221, 233, 0.55), rgba(241, 199, 218, 0.45)), url('../img/home-hero.jpg') center center / cover no-repeat scroll;
+    background: linear-gradient(130deg, rgba(250, 221, 233, 0.55), rgba(241, 199, 218, 0.45)), url('../img/home-hero.jpg') center center / cover no-repeat fixed;
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
 }
 
 body.wangscape-homepage {
-    background: linear-gradient(130deg, rgba(250, 221, 233, 0.55), rgba(241, 199, 218, 0.45)), url('../img/home-hero.jpg') center top / cover no-repeat scroll !important;
+    background: linear-gradient(130deg, rgba(250, 221, 233, 0.55), rgba(241, 199, 218, 0.45)), url('../img/home-hero.jpg') center top / cover no-repeat fixed !important;
 }
 
 body::before {
@@ -1365,7 +1365,7 @@ article .post-content,
 
 /* ===== 暗色模式 ===== */
 [data-scheme="dark"] body {
-    background: linear-gradient(130deg, rgba(30, 16, 24, 0.72), rgba(52, 28, 42, 0.68)), url('../img/home-hero.jpg') center top / cover no-repeat scroll;
+    background: linear-gradient(130deg, rgba(30, 16, 24, 0.72), rgba(52, 28, 42, 0.68)), url('../img/home-hero.jpg') center top / cover no-repeat fixed;
 }
 
 [data-scheme="dark"] .main {
@@ -2880,7 +2880,7 @@ article,
 
 /* ===== 深色模式 - 背景与花瓣 ===== */
 [data-scheme="dark"] body {
-    background: linear-gradient(130deg, rgba(30, 16, 24, 0.72), rgba(52, 28, 42, 0.68)), url('../img/home-hero.jpg') center center / cover no-repeat scroll;
+    background: linear-gradient(130deg, rgba(30, 16, 24, 0.72), rgba(52, 28, 42, 0.68)), url('../img/home-hero.jpg') center center / cover no-repeat fixed;
 }
 
 [data-scheme="dark"] .ws-global-petals span {
@@ -5268,7 +5268,7 @@ body.wangscape-homepage .ws-recent {
 body:not(.wangscape-homepage) {
     background:
         linear-gradient(130deg, rgba(250, 221, 233, 0.55), rgba(241, 199, 218, 0.45)),
-        url('../img/home-hero.jpg') center center / cover no-repeat scroll !important;
+        url('../img/home-hero.jpg') center center / cover no-repeat fixed !important;
 }
 
 .article-page .main-container {
