@@ -5,7 +5,7 @@ list:
     section:
         other: "文章"
 selectLanguage:
-    other: "English"
+    other: "中文"
 darkMode:
     other: "暗色模式"
 toggleMenu:

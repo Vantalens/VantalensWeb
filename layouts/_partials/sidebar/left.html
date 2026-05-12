@@ -74,30 +74,6 @@
         {{ end }}
         <li class="menu-bottom-section">
             <ol class="menu">
-                {{- $currentLanguageCode := .Language.Lang -}}
-                {{ if hugo.IsMultilingual }}
-                    <li id="i18n-switch" class="ws-lang-switch">
-                        {{ partial "helper/icon" "language" }}
-                        <span class="ws-lang-switch-label">{{ if eq .Site.Language.Lang "zh-cn" }}语言{{ else }}Language{{ end }}</span>
-                        <div class="ws-lang-switch-options" role="group" aria-label="Language switcher">
-                            {{ range .Site.Home.AllTranslations }}
-                                {{ $target := . }}
-                                {{ range $.AllTranslations }}
-                                    {{ if eq .Language.Lang $target.Language.Lang }}
-                                        {{ $target = . }}
-                                    {{ end }}
-                                {{ end }}
-                                <a
-                                    href="{{ $target.RelPermalink }}"
-                                    class="ws-lang-option{{ if eq $target.Language.Lang $currentLanguageCode }} is-active{{ end }}"
-                                    {{ if eq $target.Language.Lang $currentLanguageCode }}aria-current="true"{{ end }}>
-                                    {{ if eq .Language.Lang "zh-cn" }}中{{ else if eq .Language.Lang "en" }}EN{{ else }}{{ .Language.LanguageName }}{{ end }}
-                                </a>
-                            {{ end }}
-                        </div>
-                    </li>
-                {{ end }}
-
                 {{ if .Site.Params.colorScheme.toggle }}
                     <li id="dark-mode-toggle">
                         {{ partial "helper/icon" "toggle-left" }}

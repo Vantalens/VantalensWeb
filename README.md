@@ -4,7 +4,7 @@
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-Vantalens 是一个基于 Hugo 的双语博客项目，配套本地管理工具 TalentWriter（Go）。当前日常使用只需要启动一个统一入口：`web.exe`。它同时提供总控页面和写作页面；如果需要排查问题，再单独运行 control 和 writer。
+Vantalens 是一个基于 Hugo 的中文博客项目，配套本地管理工具 TalentWriter（Go）。当前日常使用只需要启动一个统一入口：`web.exe`。它同时提供总控页面和写作页面；如果需要排查问题，再单独运行 control 和 writer。
 
 ## 快速开始
 
@@ -54,10 +54,14 @@ go run ./cmd/writer
 
 ## 主要能力
 
-- 双语内容管理（中文/英文）
+- 中文内容管理
 - 本地可视化编辑与发布流程
 - 评论审核、批量处理与导出
 - 访问统计与访客 IP 统计
+
+## 说明
+
+当前站点仅保留中文界面与中文内容目录，不再提供中英文切换功能，也不维护英文站点内容。
 
 ## 部署
 

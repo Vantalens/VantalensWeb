@@ -30,7 +30,3 @@ KaTeX:
       defer: true
 
 Cactus:
-    - src: https://latest.cactus.chat/cactus.js
-      type: script
-    - src: https://latest.cactus.chat/style.css
-      type: style

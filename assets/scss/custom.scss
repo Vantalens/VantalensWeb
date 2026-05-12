@@ -1454,26 +1454,27 @@ article .post-content,
 @media screen and (max-width: 900px) {
     .main-container {
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
         justify-content: flex-start;
         min-height: 100dvh;
-        height: 100dvh;
+        height: auto;
         padding: 10px;
+        gap: 12px;
     }
 
     .sidebar.left,
     .sidebar.left-sidebar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
+        position: relative !important;
+        bottom: auto !important;
+        left: auto !important;
         width: 100%;
         height: auto;
-        flex-direction: row;
-        justify-content: space-around;
-        padding: 10px 20px;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 10px 16px;
         background: var(--card-background);
         border-top: 1px solid var(--border-color);
-        z-index: 100;
+        z-index: 1;
         /* 防止移动端加载时的闪烁跳动 */
         contain: style paint;
     }
@@ -1517,9 +1518,9 @@ article .post-content,
         width: 100%;
         max-width: 100%;
         height: auto;
-        min-height: calc(100dvh - 96px);
+        min-height: 0;
         padding-top: 12px;
-        padding-bottom: calc(88px + env(safe-area-inset-bottom));
+        padding-bottom: 12px;
         overflow-y: auto !important;
     }
 
@@ -5916,4 +5917,213 @@ html::-webkit-scrollbar-thumb,
 
 [data-scheme="dark"] .ws-site-footer .ws-icp {
   color: rgba(236, 220, 228, 0.72);
+}
+
+/* Final left sidebar repair: keep one soft card edge and remove duplicated left rails. */
+.sidebar.left,
+.sidebar.left-sidebar {
+    border: 1px solid rgba(255, 255, 255, 0.62) !important;
+    border-left-width: 1px !important;
+    border-radius: 28px !important;
+    box-shadow: 0 20px 50px rgba(83, 46, 66, 0.1) !important;
+}
+
+.sidebar.left::before,
+.sidebar.left::after,
+.sidebar.left-sidebar::before,
+.sidebar.left-sidebar::after {
+    display: none !important;
+    content: none !important;
+}
+
+[data-scheme="dark"] .sidebar.left,
+[data-scheme="dark"] .sidebar.left-sidebar {
+    border-color: rgba(247, 198, 199, 0.14) !important;
+    box-shadow: 0 20px 50px rgba(7, 5, 8, 0.28) !important;
+}
+
+/* Final pagination and search repair: remove duplicate card backgrounds. */
+.pagination {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+}
+
+.pagination-info {
+    display: none !important;
+}
+
+.template-search .ws-search-wrap {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.template-search .ws-search-wrap::before,
+.template-search .ws-search-wrap::after {
+    display: none !important;
+    content: none !important;
+}
+
+.template-search .ws-search-form {
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 72px;
+    align-items: stretch !important;
+    gap: 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.54) !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 18px 46px rgba(83, 46, 66, 0.1) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    overflow: hidden !important;
+}
+
+.template-search .ws-search-input-wrap {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center !important;
+    gap: 12px !important;
+    min-height: 64px !important;
+    margin: 0 !important;
+    padding: 0 18px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.template-search .ws-search-input-wrap label {
+    position: static !important;
+    inset: auto !important;
+    white-space: nowrap;
+}
+
+.template-search .ws-search-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.template-search .ws-search-input:focus,
+.template-search .ws-search-form:focus-within .ws-search-input-wrap {
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.template-search .ws-search-form:focus-within {
+    border-color: rgba(226, 155, 186, 0.72) !important;
+    box-shadow:
+        0 0 0 4px rgba(247, 198, 199, 0.14),
+        0 18px 46px rgba(83, 46, 66, 0.1) !important;
+}
+
+.template-search .ws-search-btn {
+    position: static !important;
+    width: 72px !important;
+    height: auto !important;
+    min-height: 64px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.38) !important;
+    border-radius: 0 !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.template-search .ws-search-btn:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+[data-scheme="dark"] .template-search .ws-search-form {
+    border-color: rgba(247, 198, 199, 0.14) !important;
+    background: rgba(30, 24, 32, 0.28) !important;
+    box-shadow: 0 18px 46px rgba(7, 5, 8, 0.24) !important;
+}
+
+[data-scheme="dark"] .template-search .ws-search-btn {
+    border-left-color: rgba(247, 198, 199, 0.12) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Final list-page color repair: align default Stack list cards with subpage glass panels. */
+.main.full-width > header .section-card,
+.article-list--compact,
+.article-list--compact article,
+.article-list article,
+.ws-search-result-list article {
+    background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.1), transparent 34%),
+        linear-gradient(165deg, rgba(255, 247, 251, 0.52), rgba(248, 224, 235, 0.34)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.42) !important;
+    box-shadow: 0 18px 46px rgba(83, 46, 66, 0.1) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.article-list--compact {
+    overflow: hidden !important;
+}
+
+.article-list--compact article {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.article-list--compact article:not(:last-of-type) {
+    border-bottom: 1px solid rgba(247, 198, 199, 0.2) !important;
+}
+
+.article-list--compact article:hover,
+.article-list article:hover,
+.ws-search-result-list article:hover {
+    background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.14), transparent 34%),
+        linear-gradient(165deg, rgba(255, 247, 251, 0.6), rgba(248, 224, 235, 0.42)) !important;
+    border-color: rgba(226, 155, 186, 0.34) !important;
+    box-shadow: 0 22px 52px rgba(83, 46, 66, 0.14) !important;
+}
+
+.main.full-width > header .section-title,
+.main.full-width > header .section-count,
+.article-list--compact article time,
+.article-list--compact .article-description {
+    color: rgba(75, 53, 64, 0.72) !important;
+}
+
+.main.full-width > header .section-term,
+.article-list--compact .article-title,
+.article-list--compact .article-title a {
+    color: rgba(38, 26, 34, 0.92) !important;
+}
+
+[data-scheme="dark"] .main.full-width > header .section-card,
+[data-scheme="dark"] .article-list--compact,
+[data-scheme="dark"] .article-list--compact article,
+[data-scheme="dark"] .article-list article,
+[data-scheme="dark"] .ws-search-result-list article {
+    background:
+        radial-gradient(circle at top right, rgba(255, 221, 234, 0.05), transparent 30%),
+        linear-gradient(165deg, rgba(40, 31, 41, 0.82), rgba(57, 39, 51, 0.68)) !important;
+    border-color: rgba(247, 198, 199, 0.14) !important;
+    box-shadow: 0 18px 46px rgba(7, 5, 8, 0.24) !important;
+}
+
+[data-scheme="dark"] .article-list--compact article {
+    background: transparent !important;
+    box-shadow: none !important;
 }

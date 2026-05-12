@@ -5,15 +5,10 @@
 {{ define "right-sidebar" }}{{ end }}
 
 {{ define "main" }}
-{{ $isZh := eq .Site.Language.Lang "zh-cn" }}
-{{ $heroLine := cond $isZh "偏我去时花满楼，偏我来时不逢春" "When I left, flowers filled the tower. When I returned, spring was gone." }}
+{{ $heroLine := "偏我去时花满楼，偏我来时不逢春" }}
 {{ $pages := where .Site.RegularPages "Type" "in" .Site.Params.mainSections }}
 {{ $filtered := where $pages "Params.hidden" "!=" true }}
 {{ $recent := first 6 ($filtered.ByDate.Reverse) }}
-{{ $postPage := .Site.GetPage "/post" }}
-{{ $searchPage := .Site.GetPage "/page/search" }}
-{{ $archivesPage := .Site.GetPage "/page/archives" }}
-{{ $linksPage := .Site.GetPage "/page/links" }}
 
 <section class="ws-home">
     <section class="ws-hero ws-cinema-hero" data-cinema-hero>
@@ -21,11 +16,8 @@
         <div class="ws-cinema-mist" aria-hidden="true"></div>
         <div class="ws-cinema-vignette" aria-hidden="true"></div>
         <div class="ws-hero-actions ws-motion-reveal ws-motion-reveal--rise is-visible" style="--reveal-delay: 0.08s;">
-            {{ range .Translations }}
-            <a class="ws-btn ws-btn-ghost" href="{{ .RelPermalink }}">{{ .Language.LanguageName }}</a>
-            {{ end }}
             <button class="ws-btn" type="button" data-home-theme-toggle>
-                {{ if $isZh }}切换明暗{{ else }}Theme Mode{{ end }}
+                切换明暗
             </button>
         </div>
 
@@ -41,27 +33,27 @@
 
     <section class="ws-entry-grid" aria-label="Main Sections">
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/post/" | relURL }}" data-reveal style="--reveal-delay: 0.02s;">
-            <h3>{{ if $isZh }}文章{{ else }}Posts{{ end }}</h3>
-            <p>{{ if $isZh }}最近：{{ else }}Recent: {{ end }}{{ with index $recent 0 }}{{ .Title }}{{ else }}{{ if $isZh }}暂无文章{{ else }}No posts yet{{ end }}{{ end }}</p>
+            <h3>文章</h3>
+            <p>最近：{{ with index $recent 0 }}{{ .Title }}{{ else }}暂无文章{{ end }}</p>
         </a>
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/search/" | relURL }}" data-reveal style="--reveal-delay: 0.08s;">
-            <h3>{{ if $isZh }}搜索{{ else }}Search{{ end }}</h3>
-            <p>{{ if $isZh }}标题、标签、摘要一键检索{{ else }}Find by title, tags, and snippets{{ end }}</p>
+            <h3>搜索</h3>
+            <p>标题、标签、摘要一键检索</p>
         </a>
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/archives/" | relURL }}" data-reveal style="--reveal-delay: 0.14s;">
-            <h3>{{ if $isZh }}归档{{ else }}Archive{{ end }}</h3>
-            <p>{{ if $isZh }}沿时间线回看写作轨迹{{ else }}Read along a timeline of writing{{ end }}</p>
+            <h3>归档</h3>
+            <p>沿时间线回看写作轨迹</p>
         </a>
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/links/" | relURL }}" data-reveal style="--reveal-delay: 0.2s;">
-            <h3>{{ if $isZh }}友链{{ else }}Friends{{ end }}</h3>
-            <p>{{ if $isZh }}同频站点与长期收藏{{ else }}Resonant sites and long-term picks{{ end }}</p>
+            <h3>友链</h3>
+            <p>同频站点与长期收藏</p>
         </a>
     </section>
 
     <section class="ws-recent ws-motion-reveal ws-motion-reveal--rise" data-reveal style="--reveal-delay: 0.08s;">
         <div class="ws-recent-head">
-            <h2>{{ if $isZh }}最近更新{{ else }}Recent Writings{{ end }}</h2>
-            <a href="{{ "/post/" | relURL }}">{{ if $isZh }}查看全部{{ else }}View all{{ end }}</a>
+            <h2>最近更新</h2>
+            <a href="{{ "/post/" | relURL }}">查看全部</a>
         </div>
 
         <div class="ws-recent-grid">
@@ -89,15 +81,9 @@
     var soulLine = document.querySelector('[data-soul-line]');
     if (soulLine) {
         var quotes = [
-            {{ if $isZh }}
             '人间忽晚，山河已秋',
             '夜来风雨声，花落知多少',
             '风定落花深，帘外拥红堆雪'
-            {{ else }}
-            'The evening comes gently, and mountains turn to autumn.',
-            'After night rain, petals fall without a sound.',
-            'When wind rests, blossoms gather like drifting snow.'
-            {{ end }}
         ];
         soulLine.textContent = quotes[Math.floor(Math.random() * quotes.length)];
     }

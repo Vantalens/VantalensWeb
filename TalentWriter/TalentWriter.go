@@ -1854,30 +1854,20 @@ func getAllCommentsStats() map[string]interface{} {
 	}
 }
 
-// createSyncPost 创建中英文平行 全文一起爲
-// 自动用hugo new命令卫文章，然后自动翻译第二文文本
+// createSyncPost 创建文章
+// 仅生成中文版本，不再同步英文副本
 func createSyncPost(titleZh, categories string) (map[string]interface{}, error) {
-	titleEn := translateText(titleZh, "zh", "en")
-	filename := sanitizeFilename(titleEn)
+    filename := sanitizeFilename(titleZh)
 
 	results := make(map[string]interface{})
 
-	// 创建中文文犠
+    // 创建中文文章
 	zhPath := fmt.Sprintf("content/zh-cn/post/%s/index.md", filename)
 	cmd := exec.Command("hugo", "new", zhPath)
 	cmd.Dir = hugoPath
 	if err := cmd.Run(); err == nil {
 		updateFrontmatter(zhPath, titleZh, categories)
 		results["zh_path"] = zhPath
-	}
-
-	// 创建英文文犠
-	enPath := fmt.Sprintf("content/en/post/%s/index.md", filename)
-	cmd = exec.Command("hugo", "new", enPath)
-	cmd.Dir = hugoPath
-	if err := cmd.Run(); err == nil {
-		updateFrontmatter(enPath, titleEn, categories)
-		results["en_path"] = enPath
 	}
 
 	return results, nil
@@ -4677,8 +4667,6 @@ func main() {
     rootMux.HandleFunc("/api/save_content", withCORS(withAuth(limitRequestBody(handleSaveContent, 2<<20))))
     rootMux.HandleFunc("/api/delete_post", withCORS(withAuth(limitRequestBody(handleDeletePost, 1<<20))))
     rootMux.HandleFunc("/api/create_sync", withCORS(withAuth(limitRequestBody(handleCreateSync, 5<<20))))
-    rootMux.HandleFunc("/api/sync_translate", withCORS(withAuth(limitRequestBody(handleSyncTranslate, 5<<20))))
-    rootMux.HandleFunc("/api/translate_text", withCORS(limitRequestBody(handleTranslateText, 16<<10)))
     rootMux.HandleFunc("/api/command", withCORS(withAuth(limitRequestBody(handleCommandAPI, 512))))
     rootMux.HandleFunc("/api/comments", withCORS(handleGetComments))
     rootMux.HandleFunc("/api/add_comment", withCORS(limitRequestBody(handleAddComment, 1<<20)))
@@ -6162,11 +6150,11 @@ var htmlTemplate = `<!DOCTYPE html>
     <div class="modal-overlay" id="create-modal">
         <div class="modal-card">
             <h2 style="margin-top:0">创建新文章</h2>
-            <label>中文标题</label>
+            <label>文章标题</label>
             <input type="text" id="postTitle" placeholder="例如：冬日随笔">
-            <label>分类（英文）</label>
-            <input type="text" id="postCat" placeholder="Life, Code">
-            <p style="font-size:12px; color:var(--dash-text-dim)">* 系统将自动翻译为英文并创建双语版本。</p>
+            <label>分类</label>
+            <input type="text" id="postCat" placeholder="生活, 技术">
+            <p style="font-size:12px; color:var(--dash-text-dim)">* 仅创建中文文章，不再同步英文版本。</p>
             <div style="text-align:right">
                 <button class="btn-cancel" onclick="closeCreateModal()">取消</button>
                 <button class="btn-confirm" onclick="createPost()">创建</button>
@@ -6846,51 +6834,6 @@ var htmlTemplate = `<!DOCTYPE html>
                     const isNew = docName.includes('新建');
                     addOperationHistory('post', isNew ? 'create' : 'edit', currentDocPath, '字数: ' + content.length);
                     
-                    // 如果是中文版本，自动同步翻译到英文版本
-                    if(currentDocPath.includes('zh-cn')) {
-                        statusEl.textContent = "⏳ 正在翻译英文版本...";
-                        const enPath = currentDocPath.replace(/zh-cn/g, 'en');
-
-                        const payload = JSON.stringify({
-                            zhPath: currentDocPath,
-                            enPath: enPath,
-                            content: content
-                        });
-
-                        async function callSyncTranslateOnce() {
-                            const res = await authFetch('/api/sync_translate', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: payload
-                            });
-
-                            let body = null;
-                            try {
-                                body = await res.json();
-                            } catch (_) {
-                                body = null;
-                            }
-
-                            return { res, body };
-                        }
-
-                        // 网络抖动或临时认证状态异常时自动重试一次
-                        let syncResult = await callSyncTranslateOnce();
-                        if (!(syncResult.res.ok && syncResult.body && syncResult.body.success)) {
-                            await new Promise(resolve => setTimeout(resolve, 800));
-                            syncResult = await callSyncTranslateOnce();
-                        }
-
-                        if (syncResult.res.ok && syncResult.body && syncResult.body.success) {
-                            const msg = syncResult.body.message ? String(syncResult.body.message) : '已同步翻译';
-                            statusEl.textContent = "✅ 已保存（" + msg + "） " + new Date().toLocaleTimeString();
-                        } else {
-                            const backendMsg = (syncResult.body && syncResult.body.message) ? String(syncResult.body.message) : '';
-                            const detail = backendMsg || ('HTTP ' + syncResult.res.status + ' ' + syncResult.res.statusText);
-                            statusEl.textContent = "✅ 已保存（英文同步失败: " + detail + "）";
-                        }
-                    }
-                    
                     setTimeout(() => statusEl.textContent = "", 3000);
                     fetchPosts();
                     return true;
@@ -6954,7 +6897,7 @@ var htmlTemplate = `<!DOCTYPE html>
                     document.getElementById('postTitle').value = '';
                     document.getElementById('postCat').value = '';
                     await fetchPosts();
-                    alert('✅ 双语文章创建成功！\n中文版: ' + (data.data?.zh_path || '已创建') + '\n英文版: ' + (data.data?.en_path || '已创建') + '\n\n💡 提示：英文版标题已自动翻译');
+                    alert('✅ 文章创建成功！\n路径: ' + (data.data?.zh_path || '已创建'));
                 } else {
                     alert('❌ 创建失败: ' + data.message);
                 }

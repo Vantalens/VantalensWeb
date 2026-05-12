@@ -90,13 +90,26 @@
         });
     };
 
-    window.addEventListener("DOMContentLoaded", async () => {
-        try {
-            await ensureKatexAvailable();
-        } catch (error) {
-            console.warn("KaTeX fallback load failed:", error);
+    const scheduleMathRender = () => {
+        const run = () => {
+            try {
+                return ensureKatexAvailable().then(renderMath).catch(error => {
+                    console.warn("KaTeX fallback load failed:", error);
+                });
+            } catch (error) {
+                console.warn("KaTeX fallback load failed:", error);
+            }
+        };
+
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(run, { timeout: 2500 });
+            return;
         }
 
-        renderMath();
+        setTimeout(run, 1200);
+    };
+
+    window.addEventListener("load", function () {
+        scheduleMathRender();
     });
 </script>

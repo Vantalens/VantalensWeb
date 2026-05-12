@@ -17,6 +17,7 @@ go-build-*
 *.log
 *.err
 *.pid
+logs/
 
 # IDE
 .idea/
@@ -33,8 +34,12 @@ Thumbs.db
 *.env
 *.pem
 *.key
+*.p12
+*.pfx
 *deploy_key*
 *ssh_key*
+id_rsa*
+id_ed25519*
 
 # Data (user generated)
 data/comments/
@@ -54,6 +59,12 @@ public/
 build/
 dist/
 out/
+release/
+releases/
+tmp/
+temp/
 *.tgz
 *.tar.gz
+*.zip
+*.7z
 

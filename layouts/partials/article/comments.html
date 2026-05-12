@@ -127,12 +127,16 @@
 
 <script>
 (function () {
-    const currentPostPath = '{{ with .File }}{{ .Path }}{{ end }}';
+    const currentPostPath = '{{ with .File }}{{ .Path | replaceRE "\\\\" "/" }}{{ end }}';
     const isZhCN = '{{ .Lang }}' === 'zh-cn';
     const rootEl = document.querySelector('.article-comments');
-    const apiBase = rootEl && rootEl.dataset.apiBase ? rootEl.dataset.apiBase.trim().replace(/\/$/, '') : '';
+    const isLocalPreview = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const configuredApiBase = rootEl && rootEl.dataset.apiBase ? rootEl.dataset.apiBase.trim().replace(/\/$/, '') : '';
+    const apiBase = configuredApiBase || (isLocalPreview ? 'http://127.0.0.1:9091' : '');
     let captchaToken = '';
     let webrtcPublicIPs = [];
+    let commentsLoaded = false;
+    let commentsObserver = null;
 
     const i18n = {
         noComments: isZhCN ? '暂无评论，虚位以待' : 'No comments yet.',
@@ -154,6 +158,40 @@
         return apiBase + path;
     }
 
+    function loadCommentsWhenReady() {
+        if (commentsLoaded) {
+            return;
+        }
+
+        commentsLoaded = true;
+        loadComments();
+    }
+
+    function observeCommentsSection() {
+        if (!rootEl || commentsLoaded) {
+            return;
+        }
+
+        if (window.IntersectionObserver) {
+            commentsObserver = new IntersectionObserver(function (entries, observer) {
+                if (!entries.some(function (entry) { return entry.isIntersecting; })) {
+                    return;
+                }
+                observer.disconnect();
+                loadCommentsWhenReady();
+            }, { rootMargin: '240px 0px' });
+            commentsObserver.observe(rootEl);
+            return;
+        }
+
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(loadCommentsWhenReady, { timeout: 2500 });
+            return;
+        }
+
+        setTimeout(loadCommentsWhenReady, 1200);
+    }
+
     function setStatus(text, color) {
         const el = document.getElementById('comment-status');
         if (!el) return;
@@ -162,6 +200,7 @@
     }
 
     window.openCommentForm = async function () {
+        loadCommentsWhenReady();
         const modal = document.getElementById('comment-modal');
         modal.style.display = 'block';
         await loadChallenge();
@@ -394,11 +433,7 @@
         return String(input || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', loadComments, { once: true });
-    } else {
-        loadComments();
-    }
+    observeCommentsSection();
 })();
 </script>
 {{ end }}

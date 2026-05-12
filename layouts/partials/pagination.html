@@ -1,10 +1,9 @@
 {{- $pag := $.Paginator -}}
 {{- if gt $pag.TotalPages 1 -}}
-{{- $isZh := eq $.Site.Language.Lang "zh-cn" -}}
 <nav class="pagination" role="navigation" aria-label="pagination">
     {{- /* 上一页按钮 */ -}}
     {{- if $pag.Prev -}}
-    <a class="pagination-btn" href="{{ $pag.Prev.URL }}" aria-label="{{ if $isZh }}上一页{{ else }}Previous page{{ end }}">‹</a>
+    <a class="pagination-btn" href="{{ $pag.Prev.URL }}" aria-label="上一页">‹</a>
     {{- else -}}
     <span class="pagination-btn disabled">‹</span>
     {{- end -}}
@@ -20,14 +19,14 @@
 
     {{- /* 下一页按钮 */ -}}
     {{- if $pag.Next -}}
-    <a class="pagination-btn" href="{{ $pag.Next.URL }}" aria-label="{{ if $isZh }}下一页{{ else }}Next page{{ end }}">›</a>
+    <a class="pagination-btn" href="{{ $pag.Next.URL }}" aria-label="下一页">›</a>
     {{- else -}}
     <span class="pagination-btn disabled">›</span>
     {{- end -}}
 
     {{- /* 页面信息显示 */ -}}
     <div class="pagination-info">
-        <span class="page-info-text">{{ if $isZh }}第 {{ $pag.PageNumber }} 页，共 {{ $pag.TotalPages }} 页{{ else }}Page {{ $pag.PageNumber }} of {{ $pag.TotalPages }}{{ end }}</span>
+        <span class="page-info-text">第 {{ $pag.PageNumber }} 页，共 {{ $pag.TotalPages }} 页</span>
     </div>
 </nav>
 {{- end -}}

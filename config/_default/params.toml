@@ -2,7 +2,7 @@ mainSections = ["post"]
 rssFullContent = true
 favicon = "img/favicon.png"
 
-apiBase = ""
+apiBase = "https://vantalens.com"
 
 defaultContentLanguage = "zh-cn"
 hasCJKLanguage = true

@@ -37,14 +37,4 @@
     </footer>
     {{ end }}
 
-    {{ if $Page.IsTranslated }}
-        <footer class="article-translations">
-            {{ partial "helper/icon" "language" }}
-            <div>
-                {{ range $Page.Translations }}
-                    <a href="{{ .RelPermalink }}" class="link">{{ .Language.LanguageName }}</a>
-                {{ end }}
-            </div>
-        </footer>
-    {{ end }}
 </div>

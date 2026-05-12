@@ -4,15 +4,15 @@
 <section class="ws-archives-wrap">
     <header class="ws-archives-header">
         <h1>{{ .Title }}</h1>
-        <p>{{ if eq .Site.Language.Lang "zh-cn" }}按时间顺序阅读所有创作{{ else }}All writings, organized by time{{ end }}</p>
-        <p class="ws-page-poetic-line">{{ if eq .Site.Language.Lang "zh-cn" }}往事如烟{{ else }}The past drifts like smoke.{{ end }}</p>
+        <p>按时间顺序阅读所有创作</p>
+        <p class="ws-page-poetic-line">往事如烟</p>
     </header>
 
     {{- $taxonomy := $.Site.GetPage "taxonomyTerm" "categories" -}}
     {{- $terms := $taxonomy.Pages -}}
     {{ if $terms }}
     <section class="ws-categories-wrap">
-        <h2 class="section-title">{{ if eq .Site.Language.Lang "zh-cn" }}分类{{ else }}Categories{{ end }}</h2>
+        <h2 class="section-title">分类</h2>
         <div class="ws-categories-grid">
             {{ range $terms }}
                 <a href="{{ .RelPermalink }}" class="ws-category-tag">

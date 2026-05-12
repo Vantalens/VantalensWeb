@@ -1,7 +1,7 @@
 # Production domain
 baseurl = "https://vantalens.com/"
 theme = "stack"
-languageCode = "en-us"
+languageCode = "zh-cn"
 title = "Vantalens"
 
 defaultContentLanguage = "zh-cn"

@@ -5,5 +5,8 @@ layout: "links"
 comments: false
 aliases:
   - "/friends/"
-links: []
+links:
+  - title: "云栖"
+    website: "https://yunqi1001.top/"
+    description: "yunqi1001.top"
 ---

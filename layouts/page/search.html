@@ -10,7 +10,7 @@
 <section class="ws-search-wrap">
     <header class="ws-search-header">
         <h1>{{ .Title }}</h1>
-        <p>{{ if eq .Site.Language.Lang "zh-cn" }}快速查找你想要的内容{{ else }}Find exactly what you need{{ end }}</p>
+        <p>快速查找你想要的内容</p>
     </header>
 
     <form action="{{ .RelPermalink }}" class="search-form ws-search-form" {{ with .OutputFormats.Get "json" -}} data-json="{{ .RelPermalink }}"{{- end }}>
