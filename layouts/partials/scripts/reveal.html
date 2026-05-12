@@ -30,6 +30,16 @@
             if (!el.classList.contains('ws-motion-reveal')) {
                 el.classList.add('ws-motion-reveal', 'ws-motion-reveal--rise');
             }
+        });
+
+        // Commit the opacity:0 state to the rendering pipeline before observing.
+        // Without this, the synchronous class-add + observe sequence lets the
+        // browser collapse opacity:0 -> opacity:1 into a single paint and the
+        // transition never plays ("animation skipped" symptom on pages where
+        // the markup didn't ship with ws-motion-reveal pre-applied).
+        void document.body.offsetHeight;
+
+        items.forEach(function (el) {
             observer.observe(el);
         });
     }

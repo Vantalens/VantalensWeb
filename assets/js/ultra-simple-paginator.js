@@ -55,23 +55,18 @@
             // 获取尺寸信息
             var mainHeight = paginator.mainElement.clientHeight || 600;
             var containerHeight = paginator.containerElement.scrollHeight || 0;
-            
-            console.log('容器高度:', mainHeight);
-            console.log('内容高度:', containerHeight);
-            
+
             // 检查是否需要换页
             if (containerHeight <= mainHeight + 100) {
-                console.log('内容未超出，不需要换页');
                 return;
             }
-            
+
             // 计算页数
             paginator.totalPages = Math.max(2, Math.ceil(containerHeight / mainHeight));
-            console.log('总页数:', paginator.totalPages);
-            
+
             // 创建控制按钮
             createControls();
-            
+
         } catch (error) {
             console.error('设置换页错误:', error);
         }
@@ -161,9 +156,7 @@
                 if (e.key === 'ArrowLeft') changePage(-1);
                 if (e.key === 'ArrowRight') changePage(1);
             });
-            
-            console.log('换页控件创建成功');
-            
+
         } catch (error) {
             console.error('创建控件错误:', error);
         }
@@ -217,9 +210,7 @@
             // 更新按钮状态
             var buttons = paginator.controlsElement.getElementsByTagName('button');
             updateButtonStates(buttons[0], buttons[1]);
-            
-            console.log('切换到第', paginator.currentPage, '页');
-            
+
         } catch (error) {
             console.error('换页错误:', error);
         }

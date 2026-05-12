@@ -23,7 +23,7 @@
                         {{ with ($.Resources.GetMatch (printf "%s" (. | safeURL))) }}
                             {{ $permalink = .RelPermalink }}
                         {{ end }}
-                        <img src="{{ $permalink }}" alt="" loading="lazy">
+                        <img src="{{ $permalink }}" alt="{{ $link.title }} 的头像" loading="lazy">
                     {{ else }}
                         <span class="ws-friend-glyph">◇</span>
                     {{ end }}

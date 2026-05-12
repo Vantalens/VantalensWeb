@@ -47,7 +47,7 @@
                         href='{{ .URL }}'
                         {{ if .Params.newTab }}target="_blank"{{ end }}
                         {{ with .Name }}title="{{ . }}"{{ end }}
-                        rel="me"
+                        rel="me{{ if .Params.newTab }} noopener noreferrer{{ end }}"
                     >
                         {{ $icon := default "link" .Params.Icon }}
                         {{ with $icon }}
@@ -64,7 +64,7 @@
         {{ range .Site.Menus.main }}
         {{ $active := or (eq $currentPage.RelPermalink .URL) (or ($currentPage.HasMenuCurrent "main" .) ($currentPage.IsMenuCurrent "main" .)) }}
         <li {{ if $active }} class='current'{{ end }}>
-            <a href='{{ .URL }}' {{ if .Params.newTab }}target="_blank"{{ end }}>
+            <a href='{{ .URL }}' {{ if .Params.newTab }}target="_blank" rel="noopener noreferrer"{{ end }}>
                 {{ with .Params.Icon }}
                     {{ partial "helper/icon" . }}
                 {{ end }}
