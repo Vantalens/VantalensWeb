@@ -24,16 +24,24 @@
 {{ end }}
 
 {{ define "main" }}
-    <p class="ws-page-poetic-line">人间忽晚，山河已秋</p>
+    <p class="ws-page-poetic-line" data-reveal>人间忽晚，山河已秋</p>
+    <div data-reveal style="--reveal-delay: 0.08s;">
     {{ partial "article/article.html" . }}
+    </div>
 
     {{ if .Params.links }}
+    <div data-reveal style="--reveal-delay: 0.16s;">
         {{ partial "article/components/links" . }}
+    </div>
     {{ end }}
 
+    <div data-reveal style="--reveal-delay: 0.20s;">
     {{ partial "article/components/related-content" . }}
+    </div>
 
+    <div data-reveal style="--reveal-delay: 0.24s;">
     {{ partial "article/comments" . }}
+    </div>
 
     {{ partialCached "footer/footer" . }}
 

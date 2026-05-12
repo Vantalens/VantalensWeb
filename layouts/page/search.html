@@ -8,12 +8,12 @@
 
 {{ define "main" }}
 <section class="ws-search-wrap">
-    <header class="ws-search-header">
+    <header class="ws-search-header" data-reveal>
         <h1>{{ .Title }}</h1>
         <p>快速查找你想要的内容</p>
     </header>
 
-    <form action="{{ .RelPermalink }}" class="search-form ws-search-form" {{ with .OutputFormats.Get "json" -}} data-json="{{ .RelPermalink }}"{{- end }}>
+    <form action="{{ .RelPermalink }}" class="search-form ws-search-form" data-reveal style="--reveal-delay: 0.10s;" {{ with .OutputFormats.Get "json" -}} data-json="{{ .RelPermalink }}"{{- end }}>
         <p class="ws-search-input-wrap">
             <label>{{ T "search.title" }}</label>
             <input
@@ -29,7 +29,7 @@
         </button>
     </form>
 
-    <div class="search-result ws-search-result" id="search-result">
+    <div class="search-result ws-search-result" id="search-result" data-reveal style="--reveal-delay: 0.20s;">
         <h3 class="search-result--title section-title ws-search-result-title"></h3>
         <div class="search-result--list article-list--compact ws-search-result-list"></div>
     </div>

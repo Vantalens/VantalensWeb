@@ -2,7 +2,7 @@
 
 {{ define "main" }}
 <section class="ws-archives-wrap">
-    <header class="ws-archives-header">
+    <header class="ws-archives-header" data-reveal>
         <h1>{{ .Title }}</h1>
         <p>按时间顺序阅读所有创作</p>
         <p class="ws-page-poetic-line">往事如烟</p>
@@ -11,11 +11,11 @@
     {{- $taxonomy := $.Site.GetPage "taxonomyTerm" "categories" -}}
     {{- $terms := $taxonomy.Pages -}}
     {{ if $terms }}
-    <section class="ws-categories-wrap">
+    <section class="ws-categories-wrap" data-reveal>
         <h2 class="section-title">分类</h2>
         <div class="ws-categories-grid">
-            {{ range $terms }}
-                <a href="{{ .RelPermalink }}" class="ws-category-tag">
+            {{ range $i, $t := $terms }}
+                <a href="{{ .RelPermalink }}" class="ws-category-tag" data-reveal style="--reveal-delay: {{ printf "%.2fs" (mul $i 0.04) }};">
                     <span>{{ .Title }}</span>
                     <em>{{ len .Pages }}</em>
                 </a>
@@ -28,21 +28,21 @@
         {{ $pages := where .Site.RegularPages "Type" "in" .Site.Params.mainSections }}
         {{ $filtered := where $pages "Params.hidden" "!=" true }}
 
-        {{ range $filtered.GroupByDate "2006" }}
-        {{ $id := lower (replace .Key " " "-") }}
-        
-        <div class="ws-timeline-group" id="{{ $id }}">
+        {{ range $gi, $g := $filtered.GroupByDate "2006" }}
+        {{ $id := lower (replace $g.Key " " "-") }}
+
+        <div class="ws-timeline-group" id="{{ $id }}" data-reveal style="--reveal-delay: {{ printf "%.2fs" (mul $gi 0.06) }};">
             <h2 class="ws-timeline-year">
-                <a href="{{ $.RelPermalink }}#{{ $id }}">{{ .Key }}</a>
+                <a href="{{ $.RelPermalink }}#{{ $id }}">{{ $g.Key }}</a>
             </h2>
             <div class="ws-timeline-items">
-                {{ range .Pages }}
-                <article class="ws-timeline-item">
+                {{ range $i, $p := $g.Pages }}
+                <article class="ws-timeline-item" data-reveal style="--reveal-delay: {{ printf "%.2fs" (add (mul $gi 0.06) (mul $i 0.04)) }};">
                     <div class="ws-timeline-dot"></div>
-                    <a href="{{ .RelPermalink }}" class="ws-timeline-link">
-                        <time>{{ .Date.Format "01.02" }}</time>
-                        <h3>{{ .Title }}</h3>
-                        <div class="ws-post-summary">{{ .Description | default (.Summary | plainify | truncate 140) }}</div>
+                    <a href="{{ $p.RelPermalink }}" class="ws-timeline-link">
+                        <time>{{ $p.Date.Format "01.02" }}</time>
+                        <h3>{{ $p.Title }}</h3>
+                        <div class="ws-post-summary">{{ $p.Description | default ($p.Summary | plainify | truncate 140) }}</div>
                     </a>
                 </article>
                 {{ end }}
