@@ -129,8 +129,20 @@ func HandleGetComments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := r.URL.Query().Get("path")
+	if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("all")), "1") {
+		if !auth.RequireAuth(w, r) {
+			return
+		}
+		comments, err := comment.GetAllComments()
+		if err != nil {
+			RespondJSON(w, http.StatusInternalServerError, models.APIResponse{Success: false, Message: err.Error()})
+			return
+		}
+		RespondJSON(w, 200, models.APIResponse{Success: true, Data: comments})
+		return
+	}
 	if isAuthenticated(r) {
-		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("all")), "1") || strings.TrimSpace(path) == "" {
+		if strings.TrimSpace(path) == "" {
 			comments, err := comment.GetAllComments()
 			if err != nil {
 				RespondJSON(w, http.StatusInternalServerError, models.APIResponse{Success: false, Message: err.Error()})
