@@ -1,0 +1,10 @@
+{
+  "name": "vantalens",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Vantalens Hugo blog (Stack theme, paper-literary design)",
+  "scripts": {
+    "dev": "hugo.exe server --renderToMemory --disableFastRender",
+    "build": "hugo.exe --minify"
+  }
+}
