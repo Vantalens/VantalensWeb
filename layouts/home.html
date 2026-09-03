@@ -29,31 +29,44 @@
             <p class="ws-hero-line ws-tl-line ws-motion-reveal ws-motion-reveal--rise is-visible" style="--reveal-delay: 0.24s;">{{ $heroLine }}</p>
             <p class="ws-soul-line ws-tl-quote ws-motion-reveal ws-motion-reveal--rise is-visible" data-soul-line style="--reveal-delay: 0.36s;"></p>
         </div>
+
+        <span class="ws-seal ws-seal--hero" aria-hidden="true">文</span>
     </section>
+
+    <span class="ws-watermark ws-watermark--tl" aria-hidden="true">VANTALENS</span>
 
     <section class="ws-entry-grid" aria-label="Main Sections">
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/post/" | relURL }}" data-reveal style="--reveal-delay: 0.02s;">
-            <h3>文章</h3>
+            <span class="ws-entry-num">壹 · No.01</span>
+            <h3>文章<span class="ws-entry-en">Writings</span></h3>
             <p>最近：{{ with index $recent 0 }}{{ .Title }}{{ else }}暂无文章{{ end }}</p>
         </a>
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/search/" | relURL }}" data-reveal style="--reveal-delay: 0.08s;">
-            <h3>搜索</h3>
+            <span class="ws-entry-num">贰 · No.02</span>
+            <h3>搜索<span class="ws-entry-en">Search</span></h3>
             <p>标题、标签、摘要一键检索</p>
         </a>
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/archives/" | relURL }}" data-reveal style="--reveal-delay: 0.14s;">
-            <h3>归档</h3>
+            <span class="ws-entry-num">叁 · No.03</span>
+            <h3>归档<span class="ws-entry-en">Archive</span></h3>
             <p>沿时间线回看写作轨迹</p>
         </a>
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/links/" | relURL }}" data-reveal style="--reveal-delay: 0.2s;">
-            <h3>友链</h3>
+            <span class="ws-entry-num">肆 · No.04</span>
+            <h3>友链<span class="ws-entry-en">Friends</span></h3>
             <p>同频站点与长期收藏</p>
         </a>
     </section>
 
     <section class="ws-recent ws-motion-reveal ws-motion-reveal--rise" data-reveal style="--reveal-delay: 0.08s;">
+        <span class="ws-watermark ws-watermark--br" aria-hidden="true">Writings</span>
         <div class="ws-recent-head">
-            <h2>最近更新</h2>
-            <a href="{{ "/post/" | relURL }}">查看全部</a>
+            <header class="ws-sec-head">
+                <span class="ws-sec-num">伍 · No.05</span>
+                <h2 class="ws-sec-title">最近更新</h2>
+                <p class="ws-sec-sub">Recent Writings</p>
+            </header>
+            <a class="ws-view-all" href="{{ "/post/" | relURL }}">查看全部</a>
         </div>
 
         <div class="ws-recent-grid">
@@ -62,7 +75,18 @@
                 <a href="{{ .RelPermalink }}">
                     <h3>{{ .Title }}</h3>
                     <div class="ws-post-summary">{{ .Description | default (.Summary | plainify | truncate 120) }}</div>
-                    <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time>
+                    <div class="ws-post-meta">
+                        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006年1月2日" }}</time>
+                        {{ if gt .ReadingTime 0 }}<span class="ws-post-rt">约 {{ .ReadingTime }} 分钟</span>{{ end }}
+                    </div>
+                    {{ $cats := .GetTerms "categories" }}
+                    {{ $tags := .GetTerms "tags" }}
+                    {{ if or $cats $tags }}
+                    <div class="ws-chips">
+                        {{ range first 1 $cats }}<span class="ws-chip">{{ .LinkTitle }}</span>{{ end }}
+                        {{ range first 2 $tags }}<span class="ws-chip ws-chip--teal">{{ .LinkTitle }}</span>{{ end }}
+                    </div>
+                    {{ end }}
                 </a>
             </article>
             {{ end }}

@@ -1,0 +1,17 @@
+{{ $related := (.Site.RegularPages.Related .) | first 5 }}
+{{ with $related }}
+<aside class="ws-related related-content">
+    <header class="ws-sec-head">
+        <span class="ws-sec-num">陆 · No.06</span>
+        <h2 class="ws-sec-title section-title">{{ T "article.relatedContent" }}</h2>
+        <p class="ws-sec-sub">Related Writings</p>
+    </header>
+    <div class="subsection-list">
+        <div class="article-list--tile">
+            {{ range . }}
+                {{ partial "article-list/tile" . }}
+            {{ end }}
+        </div>
+    </div>
+</aside>
+{{ end }}

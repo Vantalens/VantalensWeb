@@ -26,13 +26,19 @@
     </div>
 
     {{ $showDate := not $Page.Date.IsZero }}
-    {{ if $showDate }}
+    {{ $showReadingTime := $Page.Params.readingTime | default ($Page.Site.Params.article.readingTime) }}
+    {{ if or $showDate $showReadingTime }}
     <footer class="article-time">
         <div>
+            {{ if $showDate }}
             {{ partial "helper/icon" "date" }}
             <time class="article-time--published" datetime='{{ $Page.Date.Format "2006-01-02T15:04:05Z07:00" }}'>
-                {{- $Page.Date | time.Format (or $Page.Site.Params.dateFormat.published "Jan 02, 2006") -}}
+                {{- $Page.Date | time.Format (or $Page.Site.Params.dateFormat.published "2006年1月2日") -}}
             </time>
+            {{ end }}
+            {{ if and $showReadingTime (gt $Page.ReadingTime 0) }}
+            <span class="ws-post-rt">约 {{ $Page.ReadingTime }} 分钟</span>
+            {{ end }}
         </div>
     </footer>
     {{ end }}

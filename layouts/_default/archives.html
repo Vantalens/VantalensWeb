@@ -2,6 +2,7 @@
 
 {{ define "main" }}
 <section class="ws-archives-wrap">
+    <span class="ws-watermark ws-watermark--tl" aria-hidden="true">Archive</span>
     <header class="ws-archives-header" data-reveal>
         <h1>{{ .Title }}</h1>
         <p>按时间顺序阅读所有创作</p>
@@ -12,7 +13,11 @@
     {{- $terms := $taxonomy.Pages -}}
     {{ if $terms }}
     <section class="ws-categories-wrap" data-reveal>
-        <h2 class="section-title">分类</h2>
+        <header class="ws-sec-head">
+            <span class="ws-sec-num">壹 · No.01</span>
+            <h2 class="ws-sec-title section-title">分类</h2>
+            <p class="ws-sec-sub">Categories</p>
+        </header>
         <div class="ws-categories-grid">
             {{ range $i, $t := $terms }}
                 <a href="{{ .RelPermalink }}" class="ws-category-tag" data-reveal style="--reveal-delay: {{ printf "%.2fs" (mul $i 0.04) }};">
@@ -25,6 +30,11 @@
     {{ end }}
 
     <section class="ws-timeline">
+        <header class="ws-sec-head" data-reveal>
+            <span class="ws-sec-num">贰 · No.02</span>
+            <h2 class="ws-sec-title">时间线</h2>
+            <p class="ws-sec-sub">Timeline</p>
+        </header>
         {{ $pages := where .Site.RegularPages "Type" "in" .Site.Params.mainSections }}
         {{ $filtered := where $pages "Params.hidden" "!=" true }}
 
@@ -40,7 +50,7 @@
                 <article class="ws-timeline-item" data-reveal style="--reveal-delay: {{ printf "%.2fs" (add (mul $gi 0.06) (mul $i 0.04)) }};">
                     <div class="ws-timeline-dot"></div>
                     <a href="{{ $p.RelPermalink }}" class="ws-timeline-link">
-                        <time>{{ $p.Date.Format "01.02" }}</time>
+                        <time>{{ $p.Date.Format "1月2日" }}</time>
                         <h3>{{ $p.Title }}</h3>
                         <div class="ws-post-summary">{{ $p.Description | default ($p.Summary | plainify | truncate 140) }}</div>
                     </a>

@@ -16,3 +16,7 @@ math = true
 [colorScheme]
 toggle = true
 default = "auto"
+
+[dateFormat]
+published = "2006年1月2日"
+lastUpdated = "2006年1月2日"

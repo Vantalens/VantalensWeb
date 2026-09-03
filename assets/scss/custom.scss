@@ -6415,3 +6415,1039 @@ html::-webkit-scrollbar-thumb,
 @media screen and (max-width: 768px) {
     .article-page .article-list--tile { grid-template-columns: 1fr; }
 }
+/* ============================================================
+   纸面文学 · Paper Literary Redesign
+   方向：氛围图只留在 hero/页首装饰区；所有正文与列表内容
+   落在纸面实体卡片上。本节为最终覆盖层（级联末尾）。
+   ============================================================ */
+
+/* ---------- 设计变量：纸面色票 + 字体栈 ---------- */
+:root {
+    /* 纸面配色（亮色） */
+    --paper: #f8f6f1;
+    --paper-ground: #fffdf9;
+    --paper-ink: #221e1f;
+    --paper-ink-soft: #6b6365;
+    --paper-accent: #c73e55;
+    --paper-accent-soft: rgba(199, 62, 85, 0.09);
+    --paper-teal: #4f9e8f;
+    --paper-border: rgba(34, 30, 31, 0.24);
+    --paper-border-strong: rgba(34, 30, 31, 0.55);
+    --paper-shadow: rgba(34, 30, 31, 0.85);
+
+    /* 字体栈（仅系统字体，CSP 无外部资源） */
+    --font-serif-cn: "Songti SC", "STSong", "STZhongsong", "SimSun", serif;
+    --font-serif-latin: Didot, "Playfair Display", Georgia, "Times New Roman", serif;
+    --font-serif-mixed: Didot, "Playfair Display", Georgia, "Times New Roman", "Songti SC", "STSong", "STZhongsong", "SimSun", serif;
+
+    /* 覆盖 Stack 主题变量 */
+    --body-background: var(--paper-ground);
+    --accent-color: var(--paper-accent);
+    --accent-color-darker: #a32e42;
+    --accent-color-text: #fdf6f0;
+    --body-text-color: var(--paper-ink);
+    --card-background: var(--paper);
+    --card-background-selected: #efe9df;
+    --card-text-color-main: var(--paper-ink);
+    --card-text-color-secondary: var(--paper-ink-soft);
+    --card-text-color-tertiary: #8a8284;
+    --card-separator-color: rgba(34, 30, 31, 0.14);
+    --card-border-radius: 2px;
+    --article-font-size: 1.6rem;
+    --article-line-height: 2.05;
+}
+
+[data-scheme="dark"] {
+    /* 纸面配色（暗色对等） */
+    --paper: #1d1a1b;
+    --paper-ground: #141112;
+    --paper-ink: #ece5dd;
+    --paper-ink-soft: #a89e99;
+    --paper-accent: #e06a7f;
+    --paper-accent-soft: rgba(224, 106, 127, 0.14);
+    --paper-teal: #6bb3a5;
+    --paper-border: rgba(236, 229, 221, 0.20);
+    --paper-border-strong: rgba(236, 229, 221, 0.45);
+    --paper-shadow: rgba(236, 229, 221, 0.45);
+
+    --body-background: var(--paper-ground);
+    --accent-color: var(--paper-accent);
+    --accent-color-darker: #ee8b9c;
+    --accent-color-text: #1d1a1b;
+    --body-text-color: var(--paper-ink);
+    --card-background: var(--paper);
+    --card-background-selected: rgba(236, 229, 221, 0.10);
+    --card-text-color-main: var(--paper-ink);
+    --card-text-color-secondary: var(--paper-ink-soft);
+    --card-text-color-tertiary: #8a8078;
+    --card-separator-color: rgba(236, 229, 221, 0.12);
+}
+
+/* ---------- 页面地：正文区不再压背景图 ---------- */
+body {
+    background: var(--paper-ground) !important;
+    color: var(--paper-ink);
+}
+
+body.wangscape-homepage {
+    background: var(--paper-ground) !important;
+}
+
+[data-scheme="dark"] body {
+    background: var(--paper-ground) !important;
+}
+
+/* 旧的粉色氛围遮罩在纸面底下是杂讯，关掉 */
+body::before,
+body::after {
+    display: none;
+}
+
+/* ---------- Hero：氛围图只留在这里 ---------- */
+.wangscape-homepage .ws-cinema-hero {
+    background:
+        linear-gradient(130deg, rgba(250, 221, 233, 0.5), rgba(241, 199, 218, 0.4)),
+        url('../img/home-hero.jpg') center center / cover no-repeat !important;
+    border-radius: 4px;
+    box-shadow: none;
+}
+
+[data-scheme="dark"] .wangscape-homepage .ws-cinema-hero {
+    background:
+        linear-gradient(130deg, rgba(30, 16, 24, 0.72), rgba(52, 28, 42, 0.66)),
+        url('../img/home-hero.jpg') center center / cover no-repeat !important;
+}
+
+/* hero 衬线字栈收敛到系统字体（CSP 禁外部字体） */
+.wangscape-homepage .ws-hero-title .cn,
+.wangscape-homepage .ws-hero-line,
+.wangscape-homepage .ws-soul-line {
+    font-family: var(--font-serif-cn);
+}
+
+.wangscape-homepage .ws-hero-title .en {
+    font-family: var(--font-serif-latin);
+}
+
+/* ---------- 全站标题衬线化 ---------- */
+.article-title,
+.section-title,
+.ws-sec-title,
+.ws-recent-head h2,
+.ws-timeline-year,
+.ws-archives-header h1,
+.ws-friends-header h1,
+.ws-search-header h1,
+.ws-about-header h1,
+.ws-friend-title,
+.ws-category-tag span,
+.article-page .article-content h1,
+.article-page .article-content h2,
+.article-page .article-content h3,
+.article-page .article-content h4 {
+    font-family: var(--font-serif-mixed);
+}
+
+/* ---------- 文章页：纸面实体容器，去掉玻璃半透明 ---------- */
+.article-page {
+    --article-reading-width: 720px;
+}
+
+.article-page .main-article {
+    background: var(--paper) !important;
+    border: 1px solid var(--paper-border) !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.article-page .related-content,
+.article-page .comments-container,
+.article-page .comments-card,
+.article-page .widget--toc,
+.article-page .article-toc details {
+    background: var(--paper);
+    border: 1px solid var(--paper-border);
+    border-radius: 2px;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.article-page .main-article > .article-header .article-title,
+.article-page .article-header .article-title {
+    font-family: var(--font-serif-mixed) !important;
+    color: var(--paper-ink) !important;
+    letter-spacing: 0.01em !important;
+}
+
+[data-scheme="dark"] .article-page .main-article > .article-header .article-title,
+[data-scheme="dark"] .article-page .article-header .article-title {
+    color: var(--paper-ink) !important;
+}
+
+.article-page .main-article > .article-header .article-subtitle {
+    color: var(--paper-ink-soft);
+}
+
+.article-page .main-article > .article-header .article-time,
+.article-page .main-article > .article-header .article-translations {
+    color: var(--paper-ink-soft);
+}
+
+/* 正文中文阅读优化：行高 2.05 / 字距 0.02em / 16px */
+.article-page .article-content {
+    font-size: 16px;
+    line-height: 2.05;
+    letter-spacing: 0.02em;
+    color: var(--paper-ink);
+    border-top: 1px solid var(--paper-separator, rgba(34, 30, 31, 0.12));
+}
+
+.article-page .article-content pre,
+.article-page .article-content code,
+.article-page .article-content .highlight,
+.article-page .article-content .katex {
+    letter-spacing: 0;
+}
+
+.article-page .article-content h2 {
+    border-bottom: 2px solid var(--paper-accent);
+}
+
+.article-page .article-content h3 {
+    border-left: 4px solid var(--paper-accent);
+}
+
+.article-page .article-content blockquote {
+    background: var(--paper-accent-soft);
+    border-left: 4px solid var(--paper-accent);
+}
+
+.article-page .article-content table th {
+    background: var(--paper-accent-soft);
+}
+
+/* 分类/标签：1px 描边无填充胶囊 */
+.article-page .article-category a,
+.article-tags a,
+.article-page .main-article > .article-header .article-translations .link {
+    background: transparent !important;
+    border: 1px solid var(--paper-accent);
+    color: var(--paper-accent) !important;
+    border-radius: 2px;
+    box-shadow: none;
+    padding: 4px 12px;
+}
+
+/* ---------- 纸工艺卡片：通用实体化 ---------- */
+.wangscape-homepage .ws-entry-card,
+.wangscape-homepage .ws-recent,
+.wangscape-homepage .ws-post-card,
+.article-list--compact article,
+.article-list--tile article,
+.section-card,
+.widget,
+.ws-friend-card,
+.ws-category-tag,
+.ws-timeline-link,
+.ws-search-input-wrap,
+.ws-about-wrap,
+.ws-empty-state,
+.ws-categories-wrap,
+.ws-archives-header,
+.ws-friends-intro,
+.not-found-card {
+    background: var(--paper);
+    border: 1px solid var(--paper-border);
+    border-radius: 2px;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.ws-friend-card {
+    --card-bg: var(--paper);
+    --card-border: var(--paper-border);
+    --card-shadow: none;
+    --card-shadow-hover: none;
+}
+
+.ws-friend-card::before {
+    background: none;
+}
+
+/* 硬投影 hover（纸工艺签名） */
+.wangscape-homepage .ws-entry-card,
+.wangscape-homepage .ws-post-card,
+.article-list--compact article,
+.article-list--tile article,
+.ws-friend-card,
+.ws-category-tag,
+.ws-timeline-link {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.wangscape-homepage .ws-entry-card:hover,
+.wangscape-homepage .ws-post-card:hover,
+.article-list--compact article:hover,
+.article-list--tile article:hover,
+.ws-friend-card:hover,
+.ws-category-tag:hover,
+.ws-timeline-link:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 3px 3px 0 var(--paper-shadow);
+    border-color: var(--paper-border-strong);
+}
+
+/* 卡片文字墨色 */
+.wangscape-homepage .ws-entry-card h3,
+.wangscape-homepage .ws-recent-head h2,
+.wangscape-homepage .ws-post-card h3,
+.article-list--compact .article-title,
+.article-list--tile .article-title,
+.article-page .article-list--compact.links .article-title {
+    color: var(--paper-ink);
+}
+
+.wangscape-homepage .ws-entry-card p,
+.wangscape-homepage .ws-post-summary,
+.wangscape-homepage .ws-post-card time,
+.article-page .article-list--compact.links .article-time,
+.ws-friend-desc,
+.ws-friend-url {
+    color: var(--paper-ink-soft);
+}
+
+[data-scheme="dark"] .wangscape-homepage .ws-entry-card,
+[data-scheme="dark"] .wangscape-homepage .ws-recent,
+[data-scheme="dark"] .wangscape-homepage .ws-post-card,
+[data-scheme="dark"] .article-list--compact article,
+[data-scheme="dark"] .article-list--tile article,
+[data-scheme="dark"] .section-card,
+[data-scheme="dark"] .widget,
+[data-scheme="dark"] .ws-friend-card,
+[data-scheme="dark"] .ws-category-tag,
+[data-scheme="dark"] .ws-timeline-link,
+[data-scheme="dark"] .ws-search-input-wrap,
+[data-scheme="dark"] .ws-about-wrap,
+[data-scheme="dark"] .ws-empty-state {
+    background: var(--paper);
+    border-color: var(--paper-border);
+}
+
+[data-scheme="dark"] .wangscape-homepage .ws-entry-card h3,
+[data-scheme="dark"] .wangscape-homepage .ws-recent-head h2,
+[data-scheme="dark"] .wangscape-homepage .ws-post-card h3,
+[data-scheme="dark"] .article-list--compact .article-title,
+[data-scheme="dark"] .article-list--tile .article-title,
+[data-scheme="dark"] .article-page .article-list--compact.links .article-title,
+[data-scheme="dark"] .ws-friend-title,
+[data-scheme="dark"] .ws-friends-header h1 {
+    color: var(--paper-ink);
+}
+
+[data-scheme="dark"] .wangscape-homepage .ws-entry-card p,
+[data-scheme="dark"] .wangscape-homepage .ws-post-summary,
+[data-scheme="dark"] .wangscape-homepage .ws-post-card time,
+[data-scheme="dark"] .wangscape-homepage .ws-recent-head a,
+[data-scheme="dark"] .ws-friend-desc,
+[data-scheme="dark"] .ws-friend-url,
+[data-scheme="dark"] .ws-friends-header p {
+    color: var(--paper-ink-soft);
+}
+
+/* ---------- 签名细节 a：三节式小节标题 ---------- */
+.ws-sec-head {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: clamp(28px, 4vw, 44px);
+}
+
+.ws-sec-num {
+    display: inline-block;
+    font-family: var(--font-serif-latin);
+    font-size: 0.8rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--paper-accent);
+    border-bottom: 2px solid var(--paper-accent);
+    padding-bottom: 5px;
+}
+
+.ws-sec-title {
+    margin: 6px 0 0;
+    font-family: var(--font-serif-mixed);
+    font-size: clamp(1.75rem, 3vw, 2.4rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: 0.04em;
+    color: var(--paper-ink);
+}
+
+.ws-sec-sub {
+    margin: 0;
+    font-family: var(--font-serif-latin);
+    font-style: italic;
+    font-size: clamp(0.88rem, 1.1vw, 1rem);
+    letter-spacing: 0.08em;
+    color: var(--paper-ink-soft);
+}
+
+/* ---------- 签名细节 b：衬线水印大字 ---------- */
+.ws-watermark {
+    position: absolute;
+    z-index: 0;
+    font-family: var(--font-serif-latin);
+    font-weight: 700;
+    font-size: clamp(6rem, 16vw, 15rem);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    color: var(--paper-ink);
+    opacity: 0.05;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.ws-watermark--br {
+    right: -0.06em;
+    bottom: -0.18em;
+}
+
+.ws-watermark--tl {
+    left: -0.04em;
+    top: -0.22em;
+}
+
+/* ---------- 签名细节 c：朱砂印章 ---------- */
+.ws-seal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    background: var(--paper-accent);
+    color: #fdf6f0;
+    border-radius: 6px;
+    transform: rotate(-4deg);
+    font-family: var(--font-serif-cn);
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow:
+        inset 0 0 0 2px rgba(253, 246, 240, 0.85),
+        3px 3px 0 var(--paper-shadow);
+    user-select: none;
+}
+
+.ws-seal--hero {
+    position: absolute;
+    right: clamp(18px, 3vw, 40px);
+    bottom: clamp(18px, 4vh, 40px);
+    z-index: 60;
+}
+
+.ws-seal--footer {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+}
+
+/* ---------- 签名细节 d：卡片元信息 + 小胶囊 ---------- */
+.ws-post-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--paper-ink-soft);
+}
+
+.ws-post-meta time {
+    margin-top: 0;
+    color: var(--paper-ink-soft);
+    font-size: 0.85rem;
+}
+
+.ws-post-rt {
+    color: var(--paper-ink-soft);
+}
+
+.ws-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.ws-chip {
+    display: inline-block;
+    padding: 2px 10px;
+    border: 1px solid var(--paper-accent);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--paper-accent);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+}
+
+.ws-chip--teal {
+    border-color: var(--paper-teal);
+    color: var(--paper-teal);
+}
+
+/* ---------- 签名细节 e：1px 强调色描边空心按钮 ---------- */
+.ws-view-all,
+.pagination-btn,
+.pagination-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--paper-accent);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--paper-accent);
+    padding: 8px 18px;
+    font-size: 0.92rem;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+.ws-view-all:hover,
+.pagination-btn:hover {
+    background: var(--paper-accent-soft);
+    color: var(--paper-accent);
+}
+
+.pagination-btn.active {
+    background: var(--paper-accent);
+    border-color: var(--paper-accent);
+    color: #fdf6f0;
+}
+
+.pagination-btn.disabled {
+    border-color: var(--paper-border);
+    color: var(--paper-ink-soft);
+    opacity: 0.55;
+    cursor: default;
+}
+
+.pagination-info {
+    border-style: dashed;
+    cursor: default;
+}
+
+[data-scheme="dark"] .pagination-btn,
+[data-scheme="dark"] .pagination-info {
+    background: transparent;
+    color: var(--paper-accent);
+    border-color: var(--paper-accent);
+}
+
+[data-scheme="dark"] .pagination-btn.active {
+    background: var(--paper-accent);
+    color: #1d1a1b;
+}
+
+/* hero 页顶按钮：同款描边，压在图上需可读底 */
+.wangscape-homepage .ws-hero-actions .ws-btn,
+.wangscape-homepage .ws-hero-actions .ws-btn-ghost {
+    border: 1px solid var(--paper-accent);
+    border-radius: 2px;
+    background: rgba(248, 246, 241, 0.82);
+    color: var(--paper-accent);
+    padding: 10px 26px;
+    font-size: 0.95rem;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, transform 0.25s ease;
+}
+
+.wangscape-homepage .ws-hero-actions .ws-btn:hover {
+    background: var(--paper-accent);
+    border-color: var(--paper-accent);
+    color: #fdf6f0;
+    transform: translate(-1px, -1px);
+}
+
+[data-scheme="dark"] .wangscape-homepage .ws-hero-actions .ws-btn,
+[data-scheme="light"] .wangscape-homepage .ws-hero-actions .ws-btn {
+    border-color: var(--paper-accent);
+    color: var(--paper-accent);
+    background: rgba(248, 246, 241, 0.82);
+}
+
+[data-scheme="dark"] .wangscape-homepage .ws-hero-actions .ws-btn:hover,
+[data-scheme="light"] .wangscape-homepage .ws-hero-actions .ws-btn:hover {
+    background: var(--paper-accent);
+    color: #fdf6f0;
+}
+
+/* ---------- 签名细节 f：垂直节奏 ---------- */
+.wangscape-homepage .ws-home {
+    gap: 0;
+    position: relative;
+}
+
+.wangscape-homepage .ws-entry-grid {
+    margin: clamp(72px, 9vw, 120px) auto 0;
+    max-width: 1160px;
+    padding: 0 clamp(16px, 3vw, 32px);
+}
+
+.wangscape-homepage .ws-recent {
+    position: relative;
+    overflow: hidden;
+    margin: clamp(96px, 11vw, 130px) auto 0;
+    max-width: 1160px;
+    padding: clamp(28px, 4vw, 48px);
+}
+
+.wangscape-homepage .ws-recent-head {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: clamp(24px, 3vw, 36px);
+}
+
+.wangscape-homepage .ws-recent-head .ws-sec-head {
+    margin-bottom: 0;
+}
+
+.wangscape-homepage .ws-recent-grid {
+    position: relative;
+    z-index: 1;
+}
+
+.wangscape-homepage .site-footer {
+    margin-top: clamp(72px, 9vw, 120px);
+}
+
+/* 归档/友链/搜索页节奏 */
+.ws-archives-wrap,
+.ws-friends-wrap {
+    position: relative;
+}
+
+.ws-archives-header,
+.ws-friends-header {
+    padding: clamp(24px, 4vw, 44px);
+    margin-bottom: clamp(48px, 6vw, 80px);
+}
+
+.ws-timeline-group {
+    margin-bottom: clamp(64px, 8vw, 96px);
+}
+
+.ws-categories-wrap {
+    padding: clamp(20px, 3vw, 32px);
+    margin-bottom: clamp(56px, 7vw, 88px);
+}
+
+/* 入口卡片内结构：序号 + 中文名 + 英文小标 + 描述 */
+.ws-entry-num {
+    font-family: var(--font-serif-latin);
+    font-size: 0.78rem;
+    letter-spacing: 0.28em;
+    color: var(--paper-accent);
+    border-bottom: 2px solid var(--paper-accent);
+    padding-bottom: 4px;
+    display: inline-block;
+    margin-bottom: 12px;
+}
+
+.wangscape-homepage .ws-entry-card h3 {
+    font-family: var(--font-serif-mixed);
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+    letter-spacing: 0.06em;
+    margin: 0;
+}
+
+.ws-entry-en {
+    display: block;
+    margin-top: 4px;
+    font-family: var(--font-serif-latin);
+    font-style: italic;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    color: var(--paper-ink-soft);
+}
+
+.wangscape-homepage .ws-entry-card p {
+    margin: 10px 0 0;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: var(--paper-ink-soft);
+}
+
+[data-scheme="dark"] .wangscape-homepage .ws-entry-card p,
+[data-scheme="dark"] .ws-entry-en {
+    color: var(--paper-ink-soft);
+}
+
+/* 首页文章卡：标题衬线、摘要、元信息 */
+.wangscape-homepage .ws-post-card a {
+    padding: 20px 22px;
+}
+
+.wangscape-homepage .ws-post-card h3 {
+    font-family: var(--font-serif-mixed);
+    font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+}
+
+.wangscape-homepage .ws-post-summary {
+    margin-top: 10px;
+    font-size: 0.92rem;
+    line-height: 1.75;
+    -webkit-line-clamp: 3;
+}
+
+/* ---------- 归档页时间线纸面化 ---------- */
+.ws-timeline::before {
+    background: linear-gradient(to bottom, var(--paper-accent), transparent);
+    width: 1px;
+}
+
+.ws-timeline-dot {
+    background: var(--paper-accent);
+    border-color: var(--paper-ground);
+    box-shadow: 0 0 0 2px var(--paper-accent-soft);
+}
+
+.ws-timeline-link time {
+    color: var(--paper-accent);
+}
+
+/* 列表页 section 头 */
+.section-title {
+    color: var(--paper-ink);
+    letter-spacing: 0.04em;
+}
+
+.section-term {
+    font-family: var(--font-serif-mixed);
+}
+
+/* 页脚：印章 + 备案同行 */
+.ws-site-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+}
+
+/* 选中色 */
+::selection {
+    background: var(--paper-accent-soft);
+    color: var(--paper-ink);
+}
+
+/* ---------- 签名细节 g：细滚动条 / reduced-motion / print ---------- */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #c9beb4 transparent;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c9beb4;
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #b3a79b;
+}
+
+.main::-webkit-scrollbar {
+    width: 6px;
+}
+
+.main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.main::-webkit-scrollbar-thumb {
+    background: #c9beb4;
+    border-radius: 999px;
+}
+
+[data-scheme="dark"] html {
+    scrollbar-color: #4a4245 transparent;
+}
+
+[data-scheme="dark"] ::-webkit-scrollbar-thumb,
+[data-scheme="dark"] .main::-webkit-scrollbar-thumb {
+    background: #4a4245;
+}
+
+[data-scheme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #5d5357;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+
+    .ws-global-petals,
+    .ws-cinema-scene {
+        display: none !important;
+    }
+}
+
+@media print {
+    body {
+        background: #fff !important;
+    }
+
+    .ws-global-petals,
+    .ws-watermark,
+    .ws-seal,
+    .ws-hero,
+    .ws-hero-actions,
+    .left-sidebar,
+    .right-sidebar,
+    .pagination,
+    .ws-entry-grid,
+    .site-footer,
+    .article-page .related-content,
+    .article-page .comments-container {
+        display: none !important;
+    }
+
+    .article-page .main-article {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .article-page .article-content {
+        font-size: 12pt;
+        line-height: 1.9;
+    }
+}
+
+/* ============================================================
+   纸面实体化修补（视觉验收修复）
+   根因：历史"玻璃拟态"段落里暗色规则带 [data-scheme="dark"]
+   特指度更高，且侧栏/列表/搜索存在带 !important 的半透明
+   背景。以下规则以同级或更高特指度 + 级联末尾位置压掉。
+   ============================================================ */
+
+/* --- 文章页主卡：暗色不透明（压掉 4553 暗色玻璃 !important） --- */
+[data-scheme="dark"] .article-page .main-article {
+    background: var(--paper) !important;
+    background-image: none !important;
+    border-color: var(--paper-border) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* --- 文章页 TOC / 相关文章 / 评论 / 目录组件：暗色不透明（压掉 4538 暗色玻璃） --- */
+[data-scheme="dark"] .article-page .article-toc details,
+[data-scheme="dark"] .article-page .related-content,
+[data-scheme="dark"] .article-page .comments-container,
+[data-scheme="dark"] .article-page .comments-card,
+[data-scheme="dark"] .article-page .widget--toc {
+    background: var(--paper);
+    background-image: none;
+    border-color: var(--paper-border);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* --- 左侧栏：明暗均为纸面实体（压掉 4653 亮色玻璃与 4802 暗色玻璃） --- */
+.sidebar.left,
+.sidebar.left-sidebar {
+    background: var(--paper);
+    background-image: none;
+    border: 1px solid var(--paper-border) !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+[data-scheme="dark"] .sidebar.left,
+[data-scheme="dark"] .sidebar.left-sidebar {
+    background: var(--paper);
+    background-image: none;
+    border-color: var(--paper-border) !important;
+    box-shadow: none !important;
+}
+
+/* --- 列表页/分类页：大卡片与行不透明（压掉 6060 "glass panels" 段 !important） --- */
+.main.full-width > header .section-card,
+.article-list--compact,
+.article-list article,
+.ws-search-result-list article {
+    background: var(--paper) !important;
+    background-image: none !important;
+    border: 1px solid var(--paper-border) !important;
+    border-radius: 2px;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 列表行：透明行落在不透明大卡片上，行间墨色分隔线 */
+.article-list--compact article {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.article-list--compact article:not(:last-of-type) {
+    border-bottom: 1px solid var(--paper-border) !important;
+}
+
+.article-list--compact article:hover {
+    transform: none;
+    background: var(--paper-accent-soft) !important;
+    background-image: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.article-list article:hover,
+.ws-search-result-list article:hover {
+    background: var(--paper) !important;
+    background-image: none !important;
+    border-color: var(--paper-border-strong) !important;
+    box-shadow: 3px 3px 0 var(--paper-shadow) !important;
+}
+
+/* 列表文字墨色（旧 !important 只有亮色，暗色需对等覆盖） */
+[data-scheme="dark"] .main.full-width > header .section-title,
+[data-scheme="dark"] .main.full-width > header .section-count,
+[data-scheme="dark"] .article-list--compact article time,
+[data-scheme="dark"] .article-list--compact .article-description {
+    color: var(--paper-ink-soft) !important;
+}
+
+[data-scheme="dark"] .main.full-width > header .section-term,
+[data-scheme="dark"] .article-list--compact .article-title,
+[data-scheme="dark"] .article-list--compact .article-title a,
+[data-scheme="dark"] .article-page .article-list--compact.links .article-title {
+    color: var(--paper-ink) !important;
+}
+
+[data-scheme="dark"] .main.full-width > header .section-card,
+[data-scheme="dark"] .article-list--compact,
+[data-scheme="dark"] .article-list article,
+[data-scheme="dark"] .ws-search-result-list article,
+[data-scheme="dark"] .article-page .article-list--compact.links article,
+[data-scheme="dark"] .ws-category-tag,
+[data-scheme="dark"] .ws-timeline-link {
+    background: var(--paper) !important;
+    background-image: none !important;
+    border-color: var(--paper-border) !important;
+    box-shadow: none !important;
+}
+
+[data-scheme="dark"] .article-list--compact article {
+    background: transparent !important;
+}
+
+[data-scheme="dark"] .article-list--compact article:hover {
+    background: var(--paper-accent-soft) !important;
+}
+
+/* --- 搜索页表单：纸面实体（压掉 5972 玻璃 !important） --- */
+.template-search .ws-search-form {
+    background: var(--paper) !important;
+    border: 1px solid var(--paper-border) !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.template-search .ws-search-btn {
+    background: transparent !important;
+    border-left: 1px solid var(--paper-border) !important;
+    color: var(--paper-accent);
+}
+
+.template-search .ws-search-form:focus-within {
+    border-color: var(--paper-accent) !important;
+    box-shadow: none !important;
+}
+
+[data-scheme="dark"] .template-search .ws-search-form {
+    background: var(--paper) !important;
+    border-color: var(--paper-border) !important;
+    box-shadow: none !important;
+}
+
+[data-scheme="dark"] .template-search .ws-search-btn {
+    background: transparent !important;
+    border-left-color: var(--paper-border) !important;
+}
+
+/* --- 友链卡：暗色变量与叠层兜底 --- */
+[data-scheme="dark"] .ws-friend-card {
+    --card-bg: var(--paper);
+    --card-border: var(--paper-border);
+    --card-shadow: none;
+    --card-shadow-hover: none;
+    background: var(--paper);
+    background-image: none;
+}
+
+[data-scheme="dark"] .ws-friend-card::before {
+    background: none;
+}
+
+.ws-category-tag:hover {
+    background: var(--paper-accent-soft);
+}
+
+/* --- 特指度补丁：压掉历史规则 .article-page .main article (0,2,1) 的半透明玻璃 --- */
+/* 该历史规则带 !important 且含元素选择器 article，必须再加一层类选择器才能覆盖 */
+.article-page .main article.main-article,
+.article-page article.main-article {
+    background: var(--paper) !important;
+    background-image: none !important;
+    border: 1px solid var(--paper-border) !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+[data-scheme="dark"] .article-page .main article.main-article,
+[data-scheme="dark"] .article-page article.main-article {
+    background: var(--paper) !important;
+    background-image: none !important;
+    border-color: var(--paper-border) !important;
+}
