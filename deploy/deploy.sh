@@ -118,13 +118,11 @@ else
 fi
 BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
-# BuildInfo 变量位于 main 包（TalentWriter/cmd/server/main.go）：
-#   var GitSHA / BuildTime / BuildDirty
-# 模块路径为 vantalens/talentwriter，故 -X 用完整包路径。
-# 注意：Version 是 const "2.0.0"，无法通过 ldflags 注入，只能改源码。
-LDFLAGS="-X vantalens/talentwriter/cmd/server.GitSHA=${GIT_SHA} \
--X vantalens/talentwriter/cmd/server.BuildTime=${BUILD_TIME} \
--X vantalens/talentwriter/cmd/server.BuildDirty=${GIT_DIRTY}"
+# BuildInfo 变量位于 main 包（TalentWriter/cmd/server/main.go 的 var 块）。
+# 注意：go tool nm 显示符号名为 main.GitSHA，模块完整路径形式（vantalens/talentwriter/cmd/server.GitSHA）
+# 在本工具链（go1.26）下静默无效，必须用 main. 前缀。
+# Version 是 const "2.0.0"，无法通过 ldflags 注入，只能改源码。
+LDFLAGS="-X main.GitSHA=${GIT_SHA} -X main.BuildTime=${BUILD_TIME} -X main.BuildDirty=${GIT_DIRTY}"
 
 echo "    git_sha=${GIT_SHA} dirty=${GIT_DIRTY} build_time=${BUILD_TIME}"
 
