@@ -89,8 +89,9 @@ need_cmd go
 need_cmd git
 need_cmd ssh
 need_cmd scp
-need_cmd rsync
 need_cmd curl
+# rsync 可选：缺失时静态站点同步回退为 tar-over-ssh
+if command -v rsync >/dev/null 2>&1; then HAS_RSYNC=true; else HAS_RSYNC=false; warn "本地无 rsync，静态站点同步将回退为 tar-over-ssh"; fi
 [ -d "${GO_MODULE_DIR}" ] || die "找不到 Go 模块目录: ${GO_MODULE_DIR}"
 [ -f "${LOCAL_NGINX_CONF}" ] || die "找不到 nginx 配置: ${LOCAL_NGINX_CONF}"
 
@@ -252,10 +253,17 @@ else
 
     # 发布到站点根目录是独立于 systemd 单元的步骤
     # （unit 中 /var/www/vantalens 是 ReadOnlyPaths，后端无法直接写，故由部署脚本完成）
-    # 先 rsync 到家目录 staging（SSH 用户可写），再 sudo rsync 进站点目录，避免 /var/www 权限问题
-    rsync -az --delete -e ssh "${LOCAL_REPO_ROOT}/public/" \
-        "${SSH_HOST}:~/vantalens-site-staging/" \
-        || die "rsync 到 staging 目录失败"
+    # 先同步到家目录 staging（SSH 用户可写），再 sudo 落位，避免 /var/www 权限问题
+    if [ "${HAS_RSYNC}" = true ]; then
+        rsync -az --delete -e ssh "${LOCAL_REPO_ROOT}/public/" \
+            "${SSH_HOST}:~/vantalens-site-staging/" \
+            || die "rsync 到 staging 目录失败"
+    else
+        ssh "${SSH_HOST}" "rm -rf ~/vantalens-site-staging && mkdir -p ~/vantalens-site-staging"
+        tar -czf - -C "${LOCAL_REPO_ROOT}/public" . \
+            | ssh "${SSH_HOST}" "tar -xzf - -C ~/vantalens-site-staging" \
+            || die "tar-over-ssh 同步到 staging 目录失败"
+    fi
     ssh "${SSH_HOST}" "
         set -e
         sudo rsync -a --delete ~/vantalens-site-staging/ '${REMOTE_SITE_DIR}/'
