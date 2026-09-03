@@ -26,10 +26,10 @@ BINARY_NAME="talentwriter-server"
 LOCAL_BUILD_DIR="${LOCAL_REPO_ROOT}/build"
 LOCAL_BINARY="${LOCAL_BUILD_DIR}/${BINARY_NAME}"
 
-# 【待确认】以下远端路径为推断值，首次执行前请登录服务器核对
-REMOTE_BIN_DIR="/opt/vantalens/talentwriter"           # 【待确认】二进制目录
+# 以下远端路径已于 2026-09-03 通过只读侦察确认
+REMOTE_BIN_DIR="/opt/vantalens/talentwriter"           # 已确认（systemctl cat ExecStart）
 REMOTE_BIN="${REMOTE_BIN_DIR}/${BINARY_NAME}"
-REMOTE_SITE_DIR="/var/www/vantalens"                   # 【待确认】nginx 站点根目录
+REMOTE_SITE_DIR="/var/www/vantalens"                   # 已确认（nginx root 指令）
 REMOTE_DATA_DIR="/var/lib/vantalens"
 REMOTE_WORKTREE_DIR="${REMOTE_DATA_DIR}/site-worktree" # 尚不存在，脚本会创建
 REMOTE_PUBLISH_DIR="${REMOTE_DATA_DIR}/publish"        # 尚不存在，脚本会创建
@@ -38,7 +38,7 @@ REMOTE_SERVICE_USER="vantalens"
 REMOTE_SERVICE_GROUP="vantalens"
 SYSTEMD_SERVICE="talentwriter"
 REMOTE_SYSTEMD_UNIT="/etc/systemd/system/talentwriter.service"
-REMOTE_NGINX_CONF="/etc/nginx/conf.d/vantalens.conf"   # 【待确认】实际可能是 sites-available/sites-enabled 结构
+REMOTE_NGINX_CONF="/etc/nginx/sites-available/vantalens"  # 已于 2026-09-03 侦察确认（sites-enabled 软链至此）
 LOCAL_NGINX_CONF="${LOCAL_REPO_ROOT}/deploy/vantalens-nginx.conf"
 LOCAL_SYSTEMD_UNIT="${LOCAL_REPO_ROOT}/deploy/talentwriter.service"
 
@@ -176,6 +176,21 @@ ssh "${SSH_HOST}" "
         fi
         sudo chown -R '${REMOTE_SERVICE_USER}:${REMOTE_SERVICE_GROUP}' \"\$d\"
     done
+"
+
+# ProtectSystem=strict 下只有 /var/lib/vantalens 可写，PUBLISH_OUTPUT_PATH 必须指向
+# ${REMOTE_PUBLISH_DIR}，否则 /api/publish 会因只读文件系统失败（默认 hugoPath/public
+# 在 /opt/vantalens/site 下，不可写）。若合并配置中缺失则新增独立 drop-in（不覆盖既有 drop-in）。
+log "4.5/9 确认 PUBLISH_OUTPUT_PATH 已注入 systemd"
+ssh "${SSH_HOST}" "
+    set -e
+    if sudo systemctl show '${SYSTEMD_SERVICE}' -p Environment | grep -q 'PUBLISH_OUTPUT_PATH='; then
+        echo '    PUBLISH_OUTPUT_PATH 已存在，跳过'
+    else
+        echo '    写入 drop-in 40-publish.conf（PUBLISH_OUTPUT_PATH=${REMOTE_PUBLISH_DIR}）'
+        printf '[Service]\nEnvironment=PUBLISH_OUTPUT_PATH=${REMOTE_PUBLISH_DIR}\n' | sudo tee '/etc/systemd/system/${SYSTEMD_SERVICE}.service.d/40-publish.conf' >/dev/null
+        sudo systemctl daemon-reload
+    fi
 "
 
 # ------------------------------ 5. systemd 合并配置核对 ------------------------------
