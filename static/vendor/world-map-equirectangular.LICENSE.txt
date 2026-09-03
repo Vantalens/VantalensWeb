@@ -1,0 +1,6 @@
+Asset: Equirectangular projection world map without borders.svg
+Source: https://commons.wikimedia.org/wiki/File:Equirectangular_projection_world_map_without_borders.svg
+Data source: Natural Earth 1:50m physical vectors
+License: CC0 1.0 Universal / public domain dedication
+
+The SVG is redistributed unchanged except for its local filename.

@@ -6375,3 +6375,43 @@ html::-webkit-scrollbar-thumb,
 [data-scheme="dark"] .ws-friend-card:hover .ws-friend-arrow {
     color: #f6b8d2;
 }
+
+/* ===== Verified responsive containment fixes (2026-08-12) ===== */
+.article-page .article-content,
+.article-page .article-content > *,
+.article-page .article-list--tile,
+.article-page .article-list--tile article {
+    min-width: 0;
+    max-width: 100%;
+}
+.article-page .article-content .highlight {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+.article-page .article-content .highlight .chroma,
+.article-page .article-content .highlight pre {
+    min-width: max-content;
+}
+.article-page .article-list--tile {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    width: 100%;
+}
+.not-found-card {
+    max-width: 720px;
+    margin: clamp(48px, 10vh, 120px) auto;
+    padding: clamp(24px, 5vw, 56px);
+    text-align: center;
+    border-radius: 24px;
+    background: var(--card-background);
+    box-shadow: var(--shadow-l1);
+}
+.not-found-code {
+    margin: 0;
+    font-size: clamp(4rem, 16vw, 9rem);
+    font-weight: 800;
+    line-height: 1;
+}
+@media screen and (max-width: 768px) {
+    .article-page .article-list--tile { grid-template-columns: 1fr; }
+}

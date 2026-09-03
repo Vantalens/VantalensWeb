@@ -102,7 +102,9 @@ type VisitorIP struct {
 	VisitCount int    `json:"visit_count"`
 	FirstSeen  string `json:"first_seen"`
 	LastSeen   string `json:"last_seen"`
+	Country    string `json:"country,omitempty"`
 	Region     string `json:"region,omitempty"`
+	City       string `json:"city,omitempty"`
 	Device     string `json:"device,omitempty"`
 }
 
@@ -112,6 +114,19 @@ type PageStatistics struct {
 	Views    int    `json:"views"`
 	UV       int    `json:"uv,omitempty"`
 	LastSeen string `json:"last_seen,omitempty"`
+}
+
+type RegionStatistics struct {
+	Country          string  `json:"country,omitempty"`
+	Region           string  `json:"region,omitempty"`
+	City             string  `json:"city,omitempty"`
+	Label            string  `json:"label"`
+	Views            int     `json:"views"`
+	UniqueIPs        int     `json:"unique_ips"`
+	LastSeen         string  `json:"last_seen,omitempty"`
+	RepresentativeIP string  `json:"representative_ip,omitempty"`
+	Latitude         float64 `json:"latitude,omitempty"`
+	Longitude        float64 `json:"longitude,omitempty"`
 }
 
 type WebRTCReport struct {
@@ -158,13 +173,14 @@ type VisitRecord struct {
 }
 
 type SiteStatistics struct {
-	TotalPages      int              `json:"total_pages"`
-	TotalViews      int              `json:"total_views"`
-	TotalComments   int              `json:"total_comments"`
-	PendingComments int              `json:"pending_comments"`
-	UniqueIPs       int              `json:"unique_ips"`
-	UniqueSessions  int              `json:"unique_sessions"`
-	Pages           []PageStatistics `json:"pages,omitempty"`
-	Visitors        []VisitorIP      `json:"visitors,omitempty"`
-	RecentVisits    []VisitRecord    `json:"recent_visits,omitempty"`
+	TotalPages      int                `json:"total_pages"`
+	TotalViews      int                `json:"total_views"`
+	TotalComments   int                `json:"total_comments"`
+	PendingComments int                `json:"pending_comments"`
+	UniqueIPs       int                `json:"unique_ips"`
+	UniqueSessions  int                `json:"unique_sessions"`
+	Pages           []PageStatistics   `json:"pages,omitempty"`
+	Regions         []RegionStatistics `json:"regions,omitempty"`
+	Visitors        []VisitorIP        `json:"visitors,omitempty"`
+	RecentVisits    []VisitRecord      `json:"recent_visits,omitempty"`
 }

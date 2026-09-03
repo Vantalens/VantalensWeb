@@ -21,9 +21,11 @@ import (
 )
 
 type geoRecord struct {
-	Country string
-	Region  string
-	City    string
+	Country   string
+	Region    string
+	City      string
+	Latitude  float64
+	Longitude float64
 }
 
 var (
@@ -44,6 +46,10 @@ func Init(hugoPath string) error {
 	conn.SetMaxOpenConns(1)
 	conn.SetMaxIdleConns(1)
 
+	if err := configureSQLite(conn); err != nil {
+		_ = conn.Close()
+		return err
+	}
 	if err := ensureSchema(conn); err != nil {
 		_ = conn.Close()
 		return err
@@ -56,6 +62,25 @@ func Init(hugoPath string) error {
 	db = conn
 	dbMu.Unlock()
 	return nil
+}
+
+func Close() error {
+	dbMu.Lock()
+	defer dbMu.Unlock()
+	if db == nil {
+		return nil
+	}
+	err := db.Close()
+	db = nil
+	return err
+}
+
+func configureSQLite(conn *sql.DB) error {
+	if _, err := conn.Exec(`PRAGMA journal_mode=WAL;`); err != nil {
+		return err
+	}
+	_, err := conn.Exec(`PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL;`)
+	return err
 }
 
 func ensureSchema(conn *sql.DB) error {
@@ -92,11 +117,23 @@ CREATE TABLE IF NOT EXISTS geo_cache (
 	country TEXT NOT NULL,
 	region TEXT NOT NULL,
 	city TEXT NOT NULL,
-	updated_at TEXT NOT NULL
+	updated_at TEXT NOT NULL,
+	latitude REAL NOT NULL DEFAULT 0,
+	longitude REAL NOT NULL DEFAULT 0
 );
 `
-	_, err := conn.Exec(schema)
-	return err
+	if _, err := conn.Exec(schema); err != nil {
+		return err
+	}
+	for _, migration := range []string{
+		`ALTER TABLE geo_cache ADD COLUMN latitude REAL NOT NULL DEFAULT 0`,
+		`ALTER TABLE geo_cache ADD COLUMN longitude REAL NOT NULL DEFAULT 0`,
+	} {
+		if _, err := conn.Exec(migration); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+			return err
+		}
+	}
+	return nil
 }
 
 func TrackVisit(r *http.Request, payload models.AnalyticsCollectRequest) (*models.VisitRecord, error) {
@@ -230,9 +267,38 @@ LIMIT ?`, limit)
 		}
 	}
 
+	regionRows, err := conn.Query(`
+SELECT
+       COALESCE(NULLIF(visits.country, ''), '未知') AS country,
+       COALESCE(NULLIF(visits.region, ''), '未知') AS region,
+       COALESCE(NULLIF(visits.city, ''), '') AS city,
+       COUNT(*) AS views,
+       COUNT(DISTINCT visits.ip) AS unique_ips,
+       MAX(visits.created_at) AS last_seen,
+       MAX(visits.ip) AS representative_ip,
+       COALESCE(AVG(NULLIF(geo_cache.latitude, 0)), 0) AS latitude,
+       COALESCE(AVG(NULLIF(geo_cache.longitude, 0)), 0) AS longitude
+FROM visits
+LEFT JOIN geo_cache ON geo_cache.ip = visits.ip
+WHERE visits.is_page_view = 1
+GROUP BY visits.country, visits.region, visits.city
+ORDER BY views DESC, last_seen DESC
+LIMIT ?`, limit)
+	if err != nil {
+		return stats, err
+	}
+	defer regionRows.Close()
+	for regionRows.Next() {
+		var item models.RegionStatistics
+		if err := regionRows.Scan(&item.Country, &item.Region, &item.City, &item.Views, &item.UniqueIPs, &item.LastSeen, &item.RepresentativeIP, &item.Latitude, &item.Longitude); err == nil {
+			item.Label = regionLabel(item.Country, item.Region, item.City)
+			stats.Regions = append(stats.Regions, item)
+		}
+	}
+
 	visitorRows, err := conn.Query(`
 SELECT ip, COUNT(*) AS visit_count, MIN(created_at) AS first_seen, MAX(created_at) AS last_seen,
-       MAX(region) AS region, MAX(device_type) AS device
+       MAX(country) AS country, MAX(region) AS region, MAX(city) AS city, MAX(device_type) AS device
 FROM visits
 WHERE is_page_view = 1
 GROUP BY ip
@@ -244,7 +310,7 @@ LIMIT 100`)
 	defer visitorRows.Close()
 	for visitorRows.Next() {
 		var item models.VisitorIP
-		if err := visitorRows.Scan(&item.IP, &item.VisitCount, &item.FirstSeen, &item.LastSeen, &item.Region, &item.Device); err == nil {
+		if err := visitorRows.Scan(&item.IP, &item.VisitCount, &item.FirstSeen, &item.LastSeen, &item.Country, &item.Region, &item.City, &item.Device); err == nil {
 			stats.Visitors = append(stats.Visitors, item)
 		}
 	}
@@ -281,6 +347,21 @@ LIMIT ?`, limit)
 	}
 
 	return stats, nil
+}
+
+func regionLabel(country, region, city string) string {
+	parts := []string{}
+	for _, value := range []string{country, region, city} {
+		value = strings.TrimSpace(value)
+		if value == "" || value == "未知" {
+			continue
+		}
+		parts = append(parts, value)
+	}
+	if len(parts) == 0 {
+		return "未知地区"
+	}
+	return strings.Join(parts, " / ")
 }
 
 func getDB() (*sql.DB, error) {
@@ -463,8 +544,8 @@ func lookupGeo(conn *sql.DB, ip string) geoRecord {
 
 	var record geoRecord
 	var updatedAt string
-	err := conn.QueryRow(`SELECT country, region, city, updated_at FROM geo_cache WHERE ip = ?`, ip).
-		Scan(&record.Country, &record.Region, &record.City, &updatedAt)
+	err := conn.QueryRow(`SELECT country, region, city, latitude, longitude, updated_at FROM geo_cache WHERE ip = ?`, ip).
+		Scan(&record.Country, &record.Region, &record.City, &record.Latitude, &record.Longitude, &updatedAt)
 	if err == nil {
 		if t, parseErr := time.Parse(time.RFC3339, updatedAt); parseErr == nil && time.Since(t) < 7*24*time.Hour {
 			return record
@@ -475,10 +556,11 @@ func lookupGeo(conn *sql.DB, ip string) geoRecord {
 	if fetched.Country == "" && fetched.Region == "" && fetched.City == "" {
 		return record
 	}
-	_, _ = conn.Exec(`INSERT INTO geo_cache(ip, country, region, city, updated_at)
-VALUES (?, ?, ?, ?, ?)
-ON CONFLICT(ip) DO UPDATE SET country=excluded.country, region=excluded.region, city=excluded.city, updated_at=excluded.updated_at`,
-		ip, fetched.Country, fetched.Region, fetched.City, time.Now().UTC().Format(time.RFC3339))
+	_, _ = conn.Exec(`INSERT INTO geo_cache(ip, country, region, city, latitude, longitude, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(ip) DO UPDATE SET country=excluded.country, region=excluded.region, city=excluded.city,
+latitude=excluded.latitude, longitude=excluded.longitude, updated_at=excluded.updated_at`,
+		ip, fetched.Country, fetched.Region, fetched.City, fetched.Latitude, fetched.Longitude, time.Now().UTC().Format(time.RFC3339))
 	return fetched
 }
 
@@ -500,18 +582,22 @@ func fetchGeo(ip string) geoRecord {
 	}
 
 	var payload struct {
-		Success bool   `json:"success"`
-		Country string `json:"country"`
-		Region  string `json:"region"`
-		City    string `json:"city"`
+		Success   bool    `json:"success"`
+		Country   string  `json:"country"`
+		Region    string  `json:"region"`
+		City      string  `json:"city"`
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil || !payload.Success {
 		return geoRecord{}
 	}
 	return geoRecord{
-		Country: payload.Country,
-		Region:  payload.Region,
-		City:    payload.City,
+		Country:   payload.Country,
+		Region:    payload.Region,
+		City:      payload.City,
+		Latitude:  payload.Latitude,
+		Longitude: payload.Longitude,
 	}
 }
 

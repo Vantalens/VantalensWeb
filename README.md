@@ -4,7 +4,7 @@
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-Vantalens 是一个基于 Hugo 的中文博客项目，配套本地管理工具 TalentWriter（Go）。当前日常使用只需要启动一个统一入口：`web.exe`。它同时提供总控页面和写作页面；如果需要排查问题，再单独运行 control 和 writer。
+Vantalens 是一个基于 Hugo 的中文博客项目，配套本地管理工具 TalentWriter（Go）。当前后端已整合为一个统一入口：`web.exe`。它在同一个进程内提供总控页面、写作页面、访问统计、评论管理和数据库同步能力。
 
 ## 快速开始
 
@@ -43,13 +43,29 @@ $env:TALENTWRITER_AUTOSTART_HUGO="false"
 
 `web.exe` 已包含总控和写作两个页面。
 
-### 3. 可选调试
+### 3. 后端数据库实时同步
 
-如果需要单独调试某个后台，可以分别运行：
+后端启动时会从服务器 `wj` 拉取评论、访问统计、文章三类 SQLite 数据库到本地 `.talentwriter/`，之后默认每 5 分钟同步一次。同步只读取服务器文件，不会写入生产数据库。
+
+可通过 `.env` 覆盖：
+
+```env
+DB_SYNC_ENABLED=true
+DB_SYNC_REMOTE_HOST=wj
+DB_SYNC_REMOTE_BASE=/var/lib/vantalens
+DB_SYNC_SCP_BIN=scp
+DB_SYNC_INTERVAL=5m
+DB_SYNC_TIMEOUT=30s
+```
+
+登录后可调用 `/api/sync/status` 查看同步状态，或 `POST /api/sync/run` 手动触发一次同步。
+
+### 4. 可选调试
+
+后端调试也统一使用同一个入口：
 
 ```bash
-go run ./cmd/control
-go run ./cmd/writer
+go run ./cmd/server
 ```
 
 ## 主要能力

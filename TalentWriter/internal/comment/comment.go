@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -71,6 +72,10 @@ func Init(hugoPath string) error {
 	}
 	conn.SetMaxOpenConns(1)
 	conn.SetMaxIdleConns(1)
+	if err := configureSQLite(conn); err != nil {
+		_ = conn.Close()
+		return err
+	}
 	if err := ensureSchema(conn); err != nil {
 		_ = conn.Close()
 		return err
@@ -82,6 +87,17 @@ func Init(hugoPath string) error {
 	db = conn
 	dbMu.Unlock()
 	return nil
+}
+
+func Close() error {
+	dbMu.Lock()
+	defer dbMu.Unlock()
+	if db == nil {
+		return nil
+	}
+	err := db.Close()
+	db = nil
+	return err
 }
 
 func ensureSchema(conn *sql.DB) error {
@@ -109,8 +125,26 @@ CREATE INDEX IF NOT EXISTS idx_comments_post_approved ON comments(post_path, app
 CREATE INDEX IF NOT EXISTS idx_comments_email ON comments(email);
 CREATE INDEX IF NOT EXISTS idx_comments_ip ON comments(ip_address);
 CREATE INDEX IF NOT EXISTS idx_comments_fingerprint ON comments(fingerprint);
+
+CREATE TABLE IF NOT EXISTS comment_audit_log (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	action TEXT NOT NULL,
+	comment_id TEXT NOT NULL,
+	operator TEXT NOT NULL,
+	success INTEGER NOT NULL,
+	error TEXT NOT NULL,
+	created_at TEXT NOT NULL
+);
 `
 	_, err := conn.Exec(schema)
+	return err
+}
+
+func configureSQLite(conn *sql.DB) error {
+	if _, err := conn.Exec(`PRAGMA journal_mode=WAL;`); err != nil {
+		return err
+	}
+	_, err := conn.Exec(`PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL;`)
 	return err
 }
 
@@ -270,15 +304,9 @@ func ApproveComment(postPath, commentID string) error {
 		return err
 	}
 	commentID = strings.TrimSpace(commentID)
-	result, err := conn.Exec(`UPDATE comments SET approved = 1, updated_at = ? WHERE id = ?`,
-		time.Now().UTC().Format(time.RFC3339), commentID)
-	if err != nil {
-		return err
-	}
-	if n, _ := result.RowsAffected(); n == 0 {
-		return fmt.Errorf("comment not found")
-	}
-	return nil
+	return mutateComment(conn, "approve", commentID, "admin", func(now string) (sql.Result, error) {
+		return conn.Exec(`UPDATE comments SET approved = 1, updated_at = ? WHERE id = ?`, now, commentID)
+	})
 }
 
 func DeleteComment(postPath, commentID string) error {
@@ -287,14 +315,61 @@ func DeleteComment(postPath, commentID string) error {
 		return err
 	}
 	commentID = strings.TrimSpace(commentID)
-	result, err := conn.Exec(`DELETE FROM comments WHERE id = ?`, commentID)
+	return mutateComment(conn, "delete", commentID, "admin", func(now string) (sql.Result, error) {
+		return conn.Exec(`DELETE FROM comments WHERE id = ?`, commentID)
+	})
+}
+
+func mutateComment(conn *sql.DB, action, commentID, operator string, execMutation func(string) (sql.Result, error)) error {
+	now := time.Now().UTC().Format(time.RFC3339)
+	if _, err := conn.Exec(`BEGIN IMMEDIATE`); err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_, _ = conn.Exec(`ROLLBACK`)
+		}
+	}()
+	result, err := execMutation(now)
+	success := false
+	errText := ""
+	if err != nil {
+		errText = err.Error()
+	} else if n, _ := result.RowsAffected(); n == 0 {
+		err = fmt.Errorf("comment not found")
+		errText = err.Error()
+	} else {
+		success = true
+	}
+	if _, auditErr := conn.Exec(`INSERT INTO comment_audit_log(action, comment_id, operator, success, error, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		action, commentID, operator, boolToInt(success), errText, now); auditErr != nil && err == nil {
+		err = auditErr
+	}
 	if err != nil {
 		return err
 	}
-	if n, _ := result.RowsAffected(); n == 0 {
-		return fmt.Errorf("comment not found")
+	if _, err := conn.Exec(`COMMIT`); err != nil {
+		return err
 	}
+	committed = true
 	return nil
+}
+
+func BackupDatabase(hugoPath string) (string, error) {
+	src := config.GetCommentsDBPath(hugoPath)
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return "", err
+	}
+	backup := src + ".backup-" + time.Now().UTC().Format("20060102T150405Z")
+	if runtime.GOOS == "windows" {
+		backup = strings.ReplaceAll(backup, ":", "")
+	}
+	if err := os.WriteFile(backup, data, 0o600); err != nil {
+		return "", err
+	}
+	return backup, nil
 }
 
 func NewChallenge() Challenge {

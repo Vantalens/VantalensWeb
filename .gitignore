@@ -44,6 +44,7 @@ known_hosts
 
 # Local deployment state
 .deploy/
+sync-db.sh
 .deploy-*/
 deploy/*.local
 deploy/*.log
@@ -63,8 +64,16 @@ Thumbs.db
 
 # IDE
 .idea/
+.claude/
 .vscode/
+.codegraph/
 
+
+# Local reports and agent plans
+CODE_REVIEW_*.md
+DATABASE_TEST_REPORT_*.md
+DISK_OPTIMIZATION_*.md
+docs/superpowers/plans/
 # Temp
 *.tmp
 *.bak
@@ -81,24 +90,32 @@ Thumbs.db
 # Go cache
 .go-cache/
 .go-mod-cache/
+.gomodcache/
 go-cache/
 go-mod-cache/
 **/.go-cache/
 **/.go-mod-cache/
+**/.gomodcache/
 **/go-cache/
 **/go-mod-cache/
 vendor/
+
+# Versioned browser assets required by the generated site
+!static/vendor/
+!static/vendor/**
 
 # Theme (downloaded, not uploaded)
 themes/stack/
 
 # TalentWriter runtime data
 .talentwriter/
+TalentWriter/test-db.go
 TalentWriter/build/
 TalentWriter/data/
 TalentWriter/public/
 TalentWriter/.hugo_build.lock
 TalentWriter/*.exe
+TalentWriter/talentwriter-server
 
 # Build output
 build/

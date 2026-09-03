@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -17,9 +18,14 @@ import (
 
 var jwtSecret []byte
 
-func InitJWTSecret() {
+const SessionCookieName = "tw_session"
+
+func InitJWTSecret() error {
 	secret := strings.TrimSpace(config.GetEnv("JWT_SECRET", ""))
 	if secret == "" {
+		if isProductionAuthRequired() {
+			return errors.New("JWT_SECRET is required in production")
+		}
 		buf := make([]byte, 32)
 		if _, err := rand.Read(buf); err == nil {
 			secret = base64URLEncode(buf)
@@ -28,6 +34,17 @@ func InitJWTSecret() {
 		}
 	}
 	jwtSecret = []byte(secret)
+	return nil
+}
+
+func isProductionAuthRequired() bool {
+	for _, key := range []string{"AUTHORITY_BACKEND", "BEHIND_PROXY", "REQUIRE_PERSISTENT_JWT_SECRET"} {
+		switch strings.ToLower(strings.TrimSpace(config.GetEnv(key, ""))) {
+		case "1", "true", "yes", "on":
+			return true
+		}
+	}
+	return false
 }
 
 func base64URLEncode(data []byte) string {
@@ -105,29 +122,99 @@ func ExtractBearerToken(r *http.Request) string {
 	return ""
 }
 
-func RequireAuth(w http.ResponseWriter, r *http.Request) bool {
+func ExtractSessionToken(r *http.Request) string {
+	cookie, err := r.Cookie(SessionCookieName)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(cookie.Value)
+}
+
+func SetSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name: SessionCookieName, Value: token, Path: "/", HttpOnly: true,
+		Secure: requestIsHTTPS(r), SameSite: http.SameSiteStrictMode,
+		MaxAge: int(getJWTExpiry().Seconds()), Expires: time.Now().Add(getJWTExpiry()),
+	})
+}
+
+func ClearSessionCookie(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name: SessionCookieName, Value: "", Path: "/", HttpOnly: true,
+		Secure: requestIsHTTPS(r), SameSite: http.SameSiteStrictMode,
+		MaxAge: -1, Expires: time.Unix(1, 0),
+	})
+}
+
+func requestIsHTTPS(r *http.Request) bool {
+	return r.TLS != nil || strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https")
+}
+
+func AuthenticateRequest(r *http.Request) (*models.JWTClaims, string, error) {
 	token := ExtractBearerToken(r)
+	source := "bearer"
 	if token == "" {
-		writeAuthError(w, http.StatusUnauthorized, "Unauthorized")
-		return false
+		token = ExtractSessionToken(r)
+		source = "cookie"
+	}
+	if token == "" {
+		return nil, "", errors.New("missing token")
 	}
 	claims, err := VerifyJWT(token)
 	if err != nil {
-		writeAuthError(w, http.StatusUnauthorized, "Invalid token")
-		return false
+		return nil, source, err
 	}
 	if claims.Typ != "access" {
-		writeAuthError(w, http.StatusUnauthorized, "Invalid token type")
+		return nil, source, errors.New("invalid token type")
+	}
+	return claims, source, nil
+}
+
+func RequireAuth(w http.ResponseWriter, r *http.Request) bool {
+	claims, source, err := AuthenticateRequest(r)
+	if err != nil {
+		if strings.Contains(err.Error(), "missing token") {
+			writeAuthError(w, http.StatusUnauthorized, "Unauthorized")
+		} else {
+			writeAuthError(w, http.StatusUnauthorized, "Invalid token")
+		}
+		return false
+	}
+	if source == "cookie" && requestMutates(r) && !sameOriginRequest(r) {
+		writeAuthError(w, http.StatusForbidden, "Cross-site request rejected")
 		return false
 	}
 	cfg := config.GetConfig()
 	if cfg != nil && cfg.AdminToken != "" {
-		if claims.Sub != "admin" {
+		expectedUsername := "vantalens"
+		if strings.TrimSpace(cfg.AdminUsername) != "" {
+			expectedUsername = strings.TrimSpace(cfg.AdminUsername)
+		}
+		if claims.Sub != expectedUsername {
 			writeAuthError(w, http.StatusForbidden, "Forbidden")
 			return false
 		}
 	}
 	return true
+}
+
+func requestMutates(r *http.Request) bool {
+	return r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions
+}
+
+func sameOriginRequest(r *http.Request) bool {
+	raw := strings.TrimSpace(r.Header.Get("Origin"))
+	if raw == "" {
+		raw = strings.TrimSpace(r.Header.Get("Referer"))
+	}
+	if raw == "" {
+		return true
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	return strings.EqualFold(u.Host, r.Host)
 }
 
 func writeAuthError(w http.ResponseWriter, status int, message string) {

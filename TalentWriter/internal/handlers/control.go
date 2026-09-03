@@ -23,40 +23,42 @@ func HandleControlPage(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	cfg := config.GetConfig()
-	writerURL := "/platform/backend"
-	if cfg != nil && cfg.LauncherMode != "all" && cfg.WriterPort > 0 {
-		writerURL = config.LocalhostURL(cfg.WriterPort, "/platform/backend")
-	}
-	_, _ = w.Write([]byte(ControlHTML(writerURL)))
+	http.Redirect(w, r, "/platform", http.StatusFound)
 }
 
-func HandleWriterPageRedirect(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/platform/backend" {
-		http.NotFound(w, r)
-		return
-	}
-	cfg := config.GetConfig()
-	writerURL := "/platform/backend"
-	if cfg != nil && cfg.LauncherMode != "all" && cfg.WriterPort > 0 {
-		writerURL = config.LocalhostURL(cfg.WriterPort, "/platform/backend")
-	}
-	http.Redirect(w, r, writerURL, http.StatusTemporaryRedirect)
-}
-
-func HandleBackendPage(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/platform/backend" {
+func HandlePlatformPage(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/platform" {
 		http.NotFound(w, r)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	cfg := config.GetConfig()
-	controlURL := "/platform/control"
-	if cfg != nil && cfg.LauncherMode != "all" && cfg.ControlPort > 0 {
-		controlURL = config.LocalhostURL(cfg.ControlPort, "/platform/control")
+	_, _ = w.Write([]byte(PlatformHomeHTML()))
+}
+
+func HandlePlatformSlash(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/platform/" {
+		http.NotFound(w, r)
+		return
 	}
-	_, _ = w.Write([]byte(DashboardHTML("2.0.0", controlURL)))
+	http.Redirect(w, r, "/platform", http.StatusFound)
+}
+
+func HandlePostsPage(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/platform/posts" {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte(PostsPageHTML("2.0.0")))
+}
+
+func HandleCommentsPage(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/platform/comments" {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte(CommentsPageHTML()))
 }
 
 func HandleControlStatus(w http.ResponseWriter, r *http.Request) {
@@ -79,9 +81,9 @@ func HandleControlStatus(w http.ResponseWriter, r *http.Request) {
 		"service":       "online",
 		"platform":      runtime.GOOS,
 		"hugo_path":     hugoPath,
-		"launcher_mode": cfgMode(cfg),
+		"launcher_mode": "all",
 	}
-	backend["writer_embedded"] = cfgMode(cfg) == "all"
+	backend["writer_embedded"] = true
 	backend["preview_url"] = previewPublicURL()
 	backend["preview_running"] = checkHTTPReady(previewInternalURL(), 900*time.Millisecond)
 
@@ -190,49 +192,24 @@ func executeControlCommand(cfg *config.Config, hugoPath, scope, action string) (
 			return map[string]interface{}{
 				"scope":  scope,
 				"action": action,
-				"result": []string{"/platform/control", "/platform/backend", "/api/posts", "/api/comments", "/api/settings", "/health", "/api/health"},
+				"result": []string{"/platform", "/platform/posts", "/platform/comments", "/platform/analytics", "/api/posts", "/api/comments", "/api/settings", "/health", "/api/health"},
 			}, nil
 		case "stop_writer":
-			if cfgMode(cfg) == "all" {
-				return map[string]interface{}{
-					"scope":  scope,
-					"action": action,
-					"result": map[string]interface{}{
-						"message": "writer is embedded in unified mode; nothing to stop separately",
-						"mode":    "all",
-					},
-				}, nil
-			}
-			writerPort := 9091
-			if cfg != nil && cfg.WriterPort > 0 {
-				writerPort = cfg.WriterPort
-			}
-			res := stopListenerOnPort(writerPort)
-			if !res.Success {
-				return map[string]interface{}{"scope": scope, "action": action, "result": res}, fmt.Errorf("failed to stop writer listener")
-			}
-			return map[string]interface{}{"scope": scope, "action": action, "result": res}, nil
+			return map[string]interface{}{
+				"scope":  scope,
+				"action": action,
+				"result": map[string]interface{}{
+					"message": "writer is embedded in the unified backend; nothing to stop separately",
+					"mode":    "all",
+				},
+			}, nil
 		case "stop_control":
-			if cfgMode(cfg) == "all" {
-				return map[string]interface{}{
-					"scope":  scope,
-					"action": action,
-					"result": map[string]interface{}{
-						"message": "control and writer share one process in unified mode; close the program window instead",
-						"mode":    "all",
-					},
-				}, nil
-			}
-			controlPort := 9090
-			if cfg != nil && cfg.ControlPort > 0 {
-				controlPort = cfg.ControlPort
-			}
 			result := map[string]interface{}{
 				"scope":  scope,
 				"action": action,
 				"result": map[string]interface{}{
-					"message": "control service will stop shortly",
-					"port":    controlPort,
+					"message": "unified backend will stop shortly",
+					"mode":    "all",
 				},
 			}
 			go func() {
@@ -367,13 +344,6 @@ func runCommand(dir string, timeout time.Duration, name string, args ...string) 
 		return commandResult{Success: false, Output: output}
 	}
 	return commandResult{Success: true, Output: output}
-}
-
-func cfgMode(cfg *config.Config) string {
-	if cfg == nil || strings.TrimSpace(cfg.LauncherMode) == "" {
-		return "all"
-	}
-	return strings.TrimSpace(cfg.LauncherMode)
 }
 
 func previewInternalURL() string {

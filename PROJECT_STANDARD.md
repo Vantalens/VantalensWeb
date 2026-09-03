@@ -11,29 +11,29 @@
 普通使用只打开一个程序：
 
 ```powershell
-D:\Vantalens\TalentWriter\web.exe
+D:\Projects\Vantalens\TalentWriter\web.exe
 ```
 
 打开后使用浏览器访问：
 
-- 写作后台：`http://127.0.0.1:9090/platform/backend`
-- 总控平台：`http://127.0.0.1:9090/platform/control`
+- 后台入口：`http://127.0.0.1:9090/platform`
+- 文章管理：`http://127.0.0.1:9090/platform/posts`
+- 评论审核：`http://127.0.0.1:9090/platform/comments`
+- 访问监控：`http://127.0.0.1:9090/platform/analytics`
 - 健康检查：`http://127.0.0.1:9090/health`
 
-`control.exe`、`writer.exe`、`server.exe`、`wswriter.exe` 不作为日常入口保留。分离调试只使用：
+`/platform/backend`、`control.exe`、`writer.exe`、`server.exe`、`wswriter.exe` 不作为入口保留。调试也只使用统一后端：
 
 ```powershell
-go run ./cmd/control
-go run ./cmd/writer
+go run ./cmd/server
 ```
 
 ## 2. 项目边界
 
-- Hugo 前端根目录：`D:\Vantalens`
-- Go 后端根目录：`D:\Vantalens\TalentWriter`
+- Hugo 前端根目录：`D:\Projects\Vantalens`
+- Go 后端根目录：`D:\Projects\Vantalens\TalentWriter`
 - 统一后端入口：`TalentWriter/cmd/server`
-- 控制台调试入口：`TalentWriter/cmd/control`
-- 写作端调试入口：`TalentWriter/cmd/writer`
+- 总控、写作、评论、访问统计和数据库同步全部由统一后端入口提供。
 
 ## 3. 数据库与数据边界
 
@@ -90,7 +90,7 @@ go run ./cmd/writer
 每次重构、后端改动、评论/文章/数据库改动后至少执行：
 
 ```powershell
-cd D:\Vantalens\TalentWriter
+cd D:\Projects\Vantalens\TalentWriter
 $env:GOCACHE = (Join-Path (Get-Location) '.go-cache')
 go build ./...
 go build -o web.exe ./cmd/server
@@ -99,7 +99,7 @@ go build -o web.exe ./cmd/server
 每次前端模板、样式、Hugo 配置改动后至少执行：
 
 ```powershell
-cd D:\Vantalens
+cd D:\Projects\Vantalens
 .\hugo.exe --minify
 ```
 

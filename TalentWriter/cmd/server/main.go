@@ -10,68 +10,65 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
-	"vantalens/talentwriter/internal/analytics"
-	"vantalens/talentwriter/internal/article"
 	"vantalens/talentwriter/internal/auth"
-	"vantalens/talentwriter/internal/comment"
 	"vantalens/talentwriter/internal/config"
 	"vantalens/talentwriter/internal/email"
-	"vantalens/talentwriter/internal/handlers"
 	"vantalens/talentwriter/internal/server"
 )
 
 const Version = "2.0.0"
+
+var (
+	GitSHA     = "unknown"
+	BuildTime  = "unknown"
+	BuildDirty = "unknown"
+)
 
 func main() {
 	printBanner()
 	config.LoadEnvFiles(".env", "../.env")
 
 	hugoPath := config.ResolveHugoPath(config.GetEnv("HUGO_PATH", "."))
+	adminUsername := strings.TrimSpace(config.GetEnv("ADMIN_USERNAME", "vantalens"))
+	if adminUsername == "" {
+		adminUsername = "vantalens"
+	}
 	adminToken := config.GetEnvAny([]string{"ADMIN_TOKEN", "ADMIN_PASSWORD"}, "")
 
 	log.Printf("[CONFIG] HUGO_PATH: %s", hugoPath)
+	log.Printf("[CONFIG] ADMIN_USERNAME: %s", adminUsername)
 	log.Printf("[CONFIG] ADMIN_TOKEN: %s", maskToken(adminToken))
 
 	cfg := &config.Config{
-		HugoPath:     hugoPath,
-		LauncherMode: "all",
-		AdminToken:   adminToken,
-		ControlPort:  parsePort(config.GetEnv("CONTROL_PORT", strconv.Itoa(config.Port)), config.Port),
-		WriterPort:   parsePort(config.GetEnv("WRITER_PORT", "9091"), 9091),
+		HugoPath:      hugoPath,
+		AdminUsername: adminUsername,
+		AdminToken:    adminToken,
 	}
 	config.SetConfig(cfg)
 
-	auth.InitJWTSecret()
+	appCtx, stopBackground := context.WithCancel(context.Background())
+	defer stopBackground()
+
+	if err := auth.InitJWTSecret(); err != nil {
+		log.Fatalf("[AUTH] Init failed: %v", err)
+	}
 	log.Println("[AUTH] JWT secret initialized")
 
-	if err := analytics.Init(hugoPath); err != nil {
-		log.Fatalf("[ANALYTICS] Init failed: %v", err)
-	}
-	log.Println("[ANALYTICS] SQLite initialized")
-
-	if err := comment.Init(hugoPath); err != nil {
-		log.Fatalf("[COMMENTS] Init failed: %v", err)
-	}
-	log.Println("[COMMENTS] SQLite initialized")
-
-	if err := article.Init(hugoPath); err != nil {
-		log.Fatalf("[ARTICLES] Init failed: %v", err)
-	}
-	log.Println("[ARTICLES] SQLite initialized")
-	if posts, err := handlers.SyncArticlesToDatabase(); err != nil {
-		log.Printf("[ARTICLES] Initial sync skipped: %v", err)
-	} else {
-		log.Printf("[ARTICLES] Initial sync completed: %d posts", len(posts))
+	if _, err := server.InitializeDatabases(appCtx, hugoPath); err != nil {
+		log.Fatalf("[DATABASE] Init failed: %v", err)
 	}
 
 	email.StartWorkers()
 	log.Println("[EMAIL] Workers started")
 
-	mux := server.BuildMux(server.ModeAll, Version)
-	log.Println("[HTTP] Routes registered (mode=all)")
+	mux := server.BuildMuxWithInfo(server.ModeAll, server.BuildInfo{
+		Version: Version, GitSHA: GitSHA, BuildTime: BuildTime, Dirty: BuildDirty,
+	})
+	log.Printf("[HTTP] Routes registered (mode=all version=%s git_sha=%s build_time=%s dirty=%s)", Version, GitSHA, BuildTime, BuildDirty)
 
 	host := config.GetEnv("HTTP_HOST", "127.0.0.1")
 	port := parsePort(config.GetEnv("HTTP_PORT", strconv.Itoa(config.Port)), config.Port)
@@ -94,13 +91,14 @@ func main() {
 	}()
 
 	if config.GetEnv("TALENTWRITER_AUTO_OPEN_BROWSER", "true") != "false" {
-		go openBrowserWhenReady(fmt.Sprintf("http://127.0.0.1:%d/platform/backend", port))
+		go openBrowserWhenReady(fmt.Sprintf("http://127.0.0.1:%d/platform", port))
 	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("[SERVER] Shutting down...")
+	stopBackground()
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {

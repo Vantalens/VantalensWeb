@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -47,7 +49,7 @@ func WithCORS(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,X-Admin-Token")
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -106,7 +108,11 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		password = strings.TrimSpace(req.Password)
 	}
 	cfg := config.GetConfig()
-	if cfg == nil || username != "admin" {
+	expectedUsername := "vantalens"
+	if cfg != nil && strings.TrimSpace(cfg.AdminUsername) != "" {
+		expectedUsername = strings.TrimSpace(cfg.AdminUsername)
+	}
+	if cfg == nil || username != expectedUsername {
 		RespondJSON(w, 401, models.APIResponse{Success: false, Message: "Unauthorized"})
 		return
 	}
@@ -118,9 +124,57 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		RespondJSON(w, 401, models.APIResponse{Success: false, Message: "Unauthorized"})
 		return
 	}
-	accessToken, _ := auth.CreateJWT("admin", "access")
-	refreshToken, _ := auth.CreateJWT("admin", "refresh")
+	accessToken, _ := auth.CreateJWT(expectedUsername, "access")
+	refreshToken, _ := auth.CreateJWT(expectedUsername, "refresh")
+	auth.SetSessionCookie(w, r, accessToken)
 	RespondJSON(w, 200, models.APIResponse{Success: true, Data: map[string]string{"token": accessToken, "access_token": accessToken, "refresh_token": refreshToken}})
+}
+
+func HandlePlatformSession(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})
+		return
+	}
+	if claims, _, err := auth.AuthenticateRequest(r); err == nil {
+		RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Data: map[string]interface{}{"authenticated": true, "user": claims.Sub, "expires_at": claims.Exp}})
+		return
+	}
+	username, password, ok := r.BasicAuth()
+	if !ok {
+		RespondJSON(w, http.StatusUnauthorized, models.APIResponse{Success: false, Message: "Basic auth credentials unavailable"})
+		return
+	}
+	cfg := config.GetConfig()
+	expectedUsername := "vantalens"
+	if cfg != nil && strings.TrimSpace(cfg.AdminUsername) != "" {
+		expectedUsername = strings.TrimSpace(cfg.AdminUsername)
+	}
+	if cfg == nil || strings.TrimSpace(username) != expectedUsername {
+		RespondJSON(w, http.StatusUnauthorized, models.APIResponse{Success: false, Message: "Unauthorized"})
+		return
+	}
+	password = strings.TrimSpace(password)
+	if cfg.AdminToken != "" && password != cfg.AdminToken {
+		RespondJSON(w, http.StatusUnauthorized, models.APIResponse{Success: false, Message: "Unauthorized"})
+		return
+	}
+	if cfg.AdminToken == "" && password == "" {
+		RespondJSON(w, http.StatusUnauthorized, models.APIResponse{Success: false, Message: "Unauthorized"})
+		return
+	}
+	accessToken, _ := auth.CreateJWT(expectedUsername, "access")
+	refreshToken, _ := auth.CreateJWT(expectedUsername, "refresh")
+	auth.SetSessionCookie(w, r, accessToken)
+	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Data: map[string]string{"token": accessToken, "access_token": accessToken, "refresh_token": refreshToken}})
+}
+
+func HandleLogout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})
+		return
+	}
+	auth.ClearSessionCookie(w, r)
+	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "Logged out"})
 }
 
 func HandleGetComments(w http.ResponseWriter, r *http.Request) {
@@ -133,22 +187,62 @@ func HandleGetComments(w http.ResponseWriter, r *http.Request) {
 		if !auth.RequireAuth(w, r) {
 			return
 		}
+		if remoteAdminConfigured() {
+			result, err := proxyRemoteAdmin(r, http.MethodGet, "/api/admin/comments?all=1", nil)
+			if err == nil {
+				result.Response.Message = "已从服务器权威后端实时读取评论"
+				RespondJSON(w, http.StatusOK, result.Response)
+				return
+			}
+			if !localCacheEnabled() {
+				RespondJSON(w, http.StatusBadGateway, models.APIResponse{
+					Success: false,
+					Message: "服务器权威后端不可达，且本地缓存兜底已关闭",
+					Data:    remoteErrorData(result, err, "disabled"),
+				})
+				return
+			}
+		}
 		comments, err := comment.GetAllComments()
 		if err != nil {
 			RespondJSON(w, http.StatusInternalServerError, models.APIResponse{Success: false, Message: err.Error()})
 			return
 		}
-		RespondJSON(w, 200, models.APIResponse{Success: true, Data: comments})
+		message := ""
+		if remoteAdminConfigured() {
+			message = "服务器权威后端不可达，当前显示本地缓存评论"
+		}
+		RespondJSON(w, 200, models.APIResponse{Success: true, Message: message, Data: comments})
 		return
 	}
 	if isAuthenticated(r) {
 		if strings.TrimSpace(path) == "" {
+			if remoteAdminConfigured() {
+				result, err := proxyRemoteAdmin(r, http.MethodGet, "/api/admin/comments?all=1", nil)
+				if err == nil {
+					result.Response.Message = "已从服务器权威后端实时读取评论"
+					RespondJSON(w, http.StatusOK, result.Response)
+					return
+				}
+				if !localCacheEnabled() {
+					RespondJSON(w, http.StatusBadGateway, models.APIResponse{
+						Success: false,
+						Message: "服务器权威后端不可达，且本地缓存兜底已关闭",
+						Data:    remoteErrorData(result, err, "disabled"),
+					})
+					return
+				}
+			}
 			comments, err := comment.GetAllComments()
 			if err != nil {
 				RespondJSON(w, http.StatusInternalServerError, models.APIResponse{Success: false, Message: err.Error()})
 				return
 			}
-			RespondJSON(w, 200, models.APIResponse{Success: true, Data: comments})
+			message := ""
+			if remoteAdminConfigured() {
+				message = "服务器权威后端不可达，当前显示本地缓存评论"
+			}
+			RespondJSON(w, 200, models.APIResponse{Success: true, Message: message, Data: comments})
 			return
 		}
 		comments, err := comment.GetComments(path)
@@ -284,11 +378,33 @@ func HandleApproveComment(w http.ResponseWriter, r *http.Request) {
 	}
 	path := r.URL.Query().Get("path")
 	id := r.URL.Query().Get("id")
-	if err := comment.ApproveComment(path, id); err != nil {
-		RespondJSON(w, 500, models.APIResponse{Success: false, Message: err.Error()})
+	if remoteAdminConfigured() {
+		remotePath := "/api/admin/comments/" + url.PathEscape(id) + "/approve"
+		result, err := proxyRemoteAdmin(r, http.MethodPost, remotePath, nil)
+		if err != nil {
+			RespondJSON(w, http.StatusBadGateway, models.APIResponse{
+				Success: false,
+				Message: "远端评论审核失败，未执行本地写入兜底: " + err.Error(),
+				Data:    remoteErrorData(result, err, "write_not_fallback"),
+			})
+			return
+		}
+		result.Response.Message = "评论已在服务器权威后端审核"
+		RespondJSON(w, http.StatusOK, result.Response)
 		return
 	}
-	RespondJSON(w, 200, models.APIResponse{Success: true})
+	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
+	defer cancel()
+	now := time.Now().UTC().Format(time.RFC3339)
+	sql := "BEGIN IMMEDIATE; UPDATE comments SET approved = 1, updated_at = " + sqliteLiteral(now) + " WHERE id = " + sqliteLiteral(id) + "; SELECT changes(); COMMIT;"
+	stages, err := runRemoteCommentMutation(ctx, sql, func() error {
+		return comment.ApproveComment(path, id)
+	})
+	if err != nil {
+		RespondJSON(w, commentMutationStatus(err), models.APIResponse{Success: false, Message: err.Error(), Data: stages})
+		return
+	}
+	RespondJSON(w, 200, models.APIResponse{Success: true, Message: "评论已审核并写回服务器", Data: stages})
 }
 
 func HandleDeleteComment(w http.ResponseWriter, r *http.Request) {
@@ -301,11 +417,42 @@ func HandleDeleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 	path := r.URL.Query().Get("path")
 	id := r.URL.Query().Get("id")
-	if err := comment.DeleteComment(path, id); err != nil {
-		RespondJSON(w, 500, models.APIResponse{Success: false, Message: err.Error()})
+	if remoteAdminConfigured() {
+		remotePath := "/api/admin/comments/" + url.PathEscape(id) + "/delete"
+		result, err := proxyRemoteAdmin(r, http.MethodPost, remotePath, nil)
+		if err != nil {
+			RespondJSON(w, http.StatusBadGateway, models.APIResponse{
+				Success: false,
+				Message: "远端评论删除失败，未执行本地写入兜底: " + err.Error(),
+				Data:    remoteErrorData(result, err, "write_not_fallback"),
+			})
+			return
+		}
+		result.Response.Message = "评论已在服务器权威后端删除"
+		RespondJSON(w, http.StatusOK, result.Response)
 		return
 	}
-	RespondJSON(w, 200, models.APIResponse{Success: true})
+	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
+	defer cancel()
+	sql := "BEGIN IMMEDIATE; DELETE FROM comments WHERE id = " + sqliteLiteral(id) + "; SELECT changes(); COMMIT;"
+	stages, err := runRemoteCommentMutation(ctx, sql, func() error {
+		return comment.DeleteComment(path, id)
+	})
+	if err != nil {
+		RespondJSON(w, commentMutationStatus(err), models.APIResponse{Success: false, Message: err.Error(), Data: stages})
+		return
+	}
+	RespondJSON(w, 200, models.APIResponse{Success: true, Message: "评论已删除并写回服务器", Data: stages})
+}
+
+func commentMutationStatus(err error) int {
+	if err == nil {
+		return http.StatusOK
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "not found") {
+		return http.StatusNotFound
+	}
+	return http.StatusInternalServerError
 }
 
 func HandleGetSettings(w http.ResponseWriter, r *http.Request) {
@@ -337,6 +484,10 @@ func HandleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	RespondJSON(w, 200, models.APIResponse{Success: true})
+}
+
+func sqliteLiteral(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
 
 func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}, maxBytes int64) error {

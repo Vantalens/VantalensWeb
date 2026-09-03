@@ -1,46 +1,16 @@
-{{- partial "helper/external" (dict "Context" . "Namespace" "KaTeX") -}}
+<link rel="stylesheet" href="{{ "vendor/katex/katex.min.css" | relURL }}">
+<script defer src="{{ "vendor/katex/katex.min.js" | relURL }}"></script>
+<script defer src="{{ "vendor/katex/contrib/auto-render.min.js" | relURL }}"></script>
 <script>
-    const fallbackKatexAssets = {
-        css: "https://unpkg.com/katex@0.16.9/dist/katex.min.css",
-        js: "https://unpkg.com/katex@0.16.9/dist/katex.min.js",
-        autoRender: "https://unpkg.com/katex@0.16.9/dist/contrib/auto-render.min.js"
-    };
-
-    const loadScript = (src) => new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = true;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-
-    const loadStyle = (href) => {
-        if (document.querySelector(`link[href="${href}"]`)) {
-            return;
-        }
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = href;
-        document.head.appendChild(link);
-    };
-
     const ensureKatexAvailable = async () => {
-        if (typeof renderMathInElement === "function" && typeof katex === "object") {
-            return;
+        for (let attempt = 0; attempt < 50; attempt += 1) {
+            if (typeof renderMathInElement === "function" && typeof katex === "object") {
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
-
-        loadStyle(fallbackKatexAssets.css);
-
-        if (typeof katex !== "object") {
-            await loadScript(fallbackKatexAssets.js);
-        }
-
-        if (typeof renderMathInElement !== "function") {
-            await loadScript(fallbackKatexAssets.autoRender);
-        }
+        throw new Error("self-hosted KaTeX assets did not initialize");
     };
-
     const renderMath = () => {
         const elementsToRender = [".main-article", ".widget--toc"];
         const renderOptions = {
@@ -94,10 +64,10 @@
         const run = () => {
             try {
                 return ensureKatexAvailable().then(renderMath).catch(error => {
-                    console.warn("KaTeX fallback load failed:", error);
+                    console.warn("KaTeX load failed:", error);
                 });
             } catch (error) {
-                console.warn("KaTeX fallback load failed:", error);
+                console.warn("KaTeX load failed:", error);
             }
         };
 

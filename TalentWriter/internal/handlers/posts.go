@@ -42,7 +42,12 @@ func HandleGetContent(w http.ResponseWriter, r *http.Request) {
 		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
-	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Data: map[string]string{"content": content}})
+	doc, err := parseArticleDocument(content)
+	if err != nil {
+		RespondJSON(w, http.StatusUnprocessableEntity, models.APIResponse{Success: false, Message: err.Error()})
+		return
+	}
+	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Data: doc})
 }
 
 func HandleSaveContent(w http.ResponseWriter, r *http.Request) {
@@ -54,17 +59,38 @@ func HandleSaveContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Path    string `json:"path"`
-		Content string `json:"content"`
+		Path     string           `json:"path"`
+		Content  string           `json:"content"`
+		Body     string           `json:"body"`
+		Metadata *ArticleMetadata `json:"metadata"`
+		Revision string           `json:"revision"`
 	}
 	if err := decodeJSONBody(w, r, &req, 2<<20); err != nil {
 		return
 	}
-	if err := writeArticle(req.Path, req.Content); err != nil {
+	existing, err := readArticle(req.Path)
+	if err != nil {
 		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
-	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "Saved"})
+	if req.Revision != "" && req.Revision != articleRevision(existing) {
+		RespondJSON(w, http.StatusConflict, models.APIResponse{Success: false, Message: "Article changed on disk; reload before saving"})
+		return
+	}
+	content := req.Content
+	if req.Metadata != nil {
+		content, err = mergeArticleDocument(existing, req.Body, *req.Metadata)
+		if err != nil {
+			RespondJSON(w, http.StatusUnprocessableEntity, models.APIResponse{Success: false, Message: err.Error()})
+			return
+		}
+	}
+	if err := writeArticle(req.Path, content); err != nil {
+		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
+		return
+	}
+	doc, _ := parseArticleDocument(content)
+	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "Saved", Data: doc})
 }
 
 func HandleDeletePost(w http.ResponseWriter, r *http.Request) {
@@ -81,11 +107,12 @@ func HandleDeletePost(w http.ResponseWriter, r *http.Request) {
 	if err := decodeJSONBody(w, r, &req, 16<<10); err != nil {
 		return
 	}
-	if err := removeArticle(req.Path); err != nil {
+	record, err := trashArticle(req.Path)
+	if err != nil {
 		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
-	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "Deleted"})
+	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "Moved to trash", Data: record})
 }
 
 func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -236,13 +263,28 @@ func writeArticle(relPath, content string) error {
 	if err != nil {
 		return err
 	}
+	original, readErr := os.ReadFile(path)
+	existed := readErr == nil
+	if readErr != nil && !os.IsNotExist(readErr) {
+		return readErr
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+	if err := writeFileAtomic(path, []byte(content), 0o600); err != nil {
 		return err
 	}
-	return article.Upsert(articleRecordFromContent(relPath, content, time.Now()))
+	if err := article.Upsert(articleRecordFromContent(relPath, content, time.Now())); err != nil {
+		if existed {
+			if rollbackErr := writeFileAtomic(path, original, 0o600); rollbackErr != nil {
+				return fmt.Errorf("update article database: %v; rollback article file: %w", err, rollbackErr)
+			}
+		} else if rollbackErr := os.Remove(path); rollbackErr != nil && !os.IsNotExist(rollbackErr) {
+			return fmt.Errorf("update article database: %v; remove new article file: %w", err, rollbackErr)
+		}
+		return fmt.Errorf("update article database: %w", err)
+	}
+	return nil
 }
 
 func removeArticle(relPath string) error {
@@ -265,13 +307,13 @@ func createArticle(title, categories, body string, draft bool) (string, error) {
 	}
 
 	slug := slugify(title)
-	relPath := filepath.Join("content", "posts", slug, "index.md")
+	relPath := filepath.Join("content", "zh-cn", "post", slug, "index.md")
 	path, err := resolveArticlePath(relPath)
 	if err != nil {
 		return "", err
 	}
 	for i := 2; fileExists(path); i++ {
-		relPath = filepath.Join("content", "posts", slug+"-"+strconv.Itoa(i), "index.md")
+		relPath = filepath.Join("content", "zh-cn", "post", slug+"-"+strconv.Itoa(i), "index.md")
 		path, err = resolveArticlePath(relPath)
 		if err != nil {
 			return "", err
@@ -300,7 +342,11 @@ func createArticle(title, categories, body string, draft bool) (string, error) {
 		return "", err
 	}
 	if err := article.Upsert(articleRecordFromContent(relPath, content, time.Now())); err != nil {
-		return "", err
+		if removeErr := os.Remove(path); removeErr != nil && !os.IsNotExist(removeErr) {
+			return "", fmt.Errorf("update article database: %v; remove article file: %w", err, removeErr)
+		}
+		cleanupEmptyDirs(filepath.Dir(path), articleRootDir())
+		return "", fmt.Errorf("update article database: %w", err)
 	}
 	return relPath, nil
 }

@@ -31,6 +31,10 @@ func Init(hugoPath string) error {
 	}
 	conn.SetMaxOpenConns(1)
 	conn.SetMaxIdleConns(1)
+	if err := configureSQLite(conn); err != nil {
+		_ = conn.Close()
+		return err
+	}
 	if err := ensureSchema(conn); err != nil {
 		_ = conn.Close()
 		return err
@@ -42,6 +46,25 @@ func Init(hugoPath string) error {
 	db = conn
 	dbMu.Unlock()
 	return nil
+}
+
+func Close() error {
+	dbMu.Lock()
+	defer dbMu.Unlock()
+	if db == nil {
+		return nil
+	}
+	err := db.Close()
+	db = nil
+	return err
+}
+
+func configureSQLite(conn *sql.DB) error {
+	if _, err := conn.Exec(`PRAGMA journal_mode=WAL;`); err != nil {
+		return err
+	}
+	_, err := conn.Exec(`PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL;`)
+	return err
 }
 
 func ensureSchema(conn *sql.DB) error {

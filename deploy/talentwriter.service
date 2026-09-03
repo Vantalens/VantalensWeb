@@ -1,3 +1,18 @@
+# =============================================================================
+# Vantalens TalentWriter systemd 单元模板
+#
+# 【重要】服务器上存在 drop-in 覆盖，本文件不是唯一生效来源：
+#   /etc/systemd/system/talentwriter.service.d/20-preview.conf
+#   /etc/systemd/system/talentwriter.service.d/30-authority.conf
+#   /etc/systemd/system/talentwriter.service.d/override.conf
+# 已确认的 drop-in 覆盖项：
+#   - HUGO_PATH 被覆盖为 /opt/vantalens/site（本文件中的 site-worktree 值不生效）
+#   - PREVIEW_PUBLIC_URL 由 drop-in 提供
+#   - COMMENT_SETTINGS_PATH 由 drop-in 提供，值为
+#     /var/lib/vantalens/comments/comment_settings.json
+# 部署时必须执行 `systemctl cat talentwriter` 核对合并后的最终配置，
+# 确认本模板与 drop-in 无冲突后再重启服务。禁止未核对就 daemon-reload + restart。
+# =============================================================================
 [Unit]
 Description=Vantalens TalentWriter backend
 After=network.target
@@ -13,8 +28,13 @@ Group=vantalens
 UMask=0077
 Environment=HTTP_PORT=9090
 Environment=HTTP_HOST=127.0.0.1
-Environment=HUGO_PATH=/var/www/vantalens
+Environment=HUGO_PATH=/var/lib/vantalens/site-worktree
+Environment=PUBLISH_OUTPUT_PATH=/var/lib/vantalens/publish
+Environment=PREVIEW_PUBLIC_URL=https://vantalens.com/preview/
+Environment=COMMENT_SETTINGS_PATH=/var/lib/vantalens/comments/comment_settings.json
 Environment=TALENTWRITER_AUTO_OPEN_BROWSER=false
+Environment=AUTHORITY_BACKEND=true
+Environment=DB_SYNC_ENABLED=false
 Environment=ALLOWED_ORIGINS=https://vantalens.com,https://www.vantalens.com,http://localhost:1313,http://127.0.0.1:1313,http://localhost:9091,http://127.0.0.1:9091
 Environment=COMMENTS_DB_PATH=/var/lib/vantalens/comments/comments.db
 Environment=ARTICLES_DB_PATH=/var/lib/vantalens/articles/articles.db
@@ -24,7 +44,7 @@ PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
 ReadOnlyPaths=/opt/vantalens/talentwriter /var/www/vantalens
-ReadWritePaths=/var/lib/vantalens
+ReadWritePaths=/var/lib/vantalens/comments /var/lib/vantalens/articles /var/lib/vantalens/analytics /var/lib/vantalens/site-worktree /var/lib/vantalens/publish
 CapabilityBoundingSet=
 LockPersonality=true
 MemoryDenyWriteExecute=true

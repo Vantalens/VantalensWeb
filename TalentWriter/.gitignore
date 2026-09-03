@@ -49,7 +49,7 @@ data/articles/
 *.db-*
 *.sqlite
 *.sqlite3
-config/
+/config/
 
 # Generated site output
 public/
