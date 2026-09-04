@@ -2150,24 +2150,24 @@ article,
     }
 }
 
-[data-scheme="dark"].wangscape-homepage .ws-entry-card,
-[data-scheme="dark"].wangscape-homepage .ws-recent,
-[data-scheme="dark"].wangscape-homepage .ws-post-card {
+[data-scheme="dark"] .wangscape-homepage .ws-entry-card,
+[data-scheme="dark"] .wangscape-homepage .ws-recent,
+[data-scheme="dark"] .wangscape-homepage .ws-post-card {
     background: rgba(28, 25, 34, 0.72);
     border-color: rgba(255, 255, 255, 0.1);
 }
 
-[data-scheme="dark"].wangscape-homepage .ws-entry-card h3,
-[data-scheme="dark"].wangscape-homepage .ws-recent-head h2,
-[data-scheme="dark"].wangscape-homepage .ws-post-card h3 {
+[data-scheme="dark"] .wangscape-homepage .ws-entry-card h3,
+[data-scheme="dark"] .wangscape-homepage .ws-recent-head h2,
+[data-scheme="dark"] .wangscape-homepage .ws-post-card h3 {
     color: #f3e6ee;
 }
 
-[data-scheme="dark"].wangscape-homepage .ws-entry-card p,
-[data-scheme="dark"].wangscape-homepage .ws-post-summary,
-[data-scheme="dark"].wangscape-homepage .ws-post-card time,
-[data-scheme="dark"].wangscape-homepage .ws-recent-head a,
-[data-scheme="dark"].wangscape-homepage .ws-about-link {
+[data-scheme="dark"] .wangscape-homepage .ws-entry-card p,
+[data-scheme="dark"] .wangscape-homepage .ws-post-summary,
+[data-scheme="dark"] .wangscape-homepage .ws-post-card time,
+[data-scheme="dark"] .wangscape-homepage .ws-recent-head a,
+[data-scheme="dark"] .wangscape-homepage .ws-about-link {
     color: #d7c0cd;
 }
 

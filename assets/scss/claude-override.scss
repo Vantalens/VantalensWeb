@@ -1,4 +1,38 @@
 /* === Claude Design System === */
+
+/* --- 调色板定义（映射到纸面文学主题，修复 var() 未定义导致文字回退为黑色） --- */
+:root {
+  --claude-near-black: #221e1f;   /* 主文字 */
+  --claude-charcoal: #221e1f;     /* 主文字（控件） */
+  --claude-ivory: #fdf6f0;        /* 浅色底（引用块/移动侧栏） */
+  --claude-warm-silver: #6b6365;  /* 次要文字 */
+  --claude-stone-gray: #6b6365;
+  --claude-olive-gray: #6b6365;
+  --claude-terracotta: #c73e55;   /* 强调色（= --paper-accent） */
+  --claude-coral: #c73e55;
+  --claude-warm-sand: #f6e9dc;    /* 标签/表头浅底 */
+  --claude-dark-surface: #2a2426; /* 暗色浮层（仅暗色规则引用） */
+  --claude-border-cream: #e6ddd2;
+  --claude-border-warm: #ddd2c4;
+  --claude-ring-warm: #c9beb4;    /* 滚动条/焦点环 */
+}
+
+[data-scheme="dark"] {
+  --claude-near-black: #ece5dd;   /* 暗色主文字（= --paper-ink） */
+  --claude-charcoal: #ece5dd;
+  --claude-ivory: #ece5dd;        /* 暗色下 ivory 用作浅文字 */
+  --claude-warm-silver: #a89e99;
+  --claude-stone-gray: #a89e99;
+  --claude-olive-gray: #a89e99;
+  --claude-terracotta: #e06a7f;
+  --claude-coral: #e06a7f;
+  --claude-warm-sand: rgba(224, 106, 127, 0.12);
+  --claude-dark-surface: #262122;
+  --claude-border-cream: rgba(236, 229, 221, 0.16);
+  --claude-border-warm: rgba(236, 229, 221, 0.14);
+  --claude-ring-warm: #4a4043;
+}
+
 /* === 滚动条 === */
 
 [data-scheme="dark"] body {
