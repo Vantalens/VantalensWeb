@@ -196,18 +196,39 @@ func handleTrashMutation(w http.ResponseWriter, r *http.Request, purge bool) {
 	if err := decodeJSONBody(w, r, &req, 8<<10); err != nil {
 		return
 	}
+	trashRecord, recordErr := readTrashRecord(req.ID)
+	target := req.ID
+	snapshot := ""
+	if recordErr == nil {
+		target = trashRecord.OriginalPath
+		content, _ := os.ReadFile(trashRecord.StoredPath)
+		snapshot = string(content)
+	}
 	if purge {
+		purgeSnapshot := ""
+		if recordErr == nil {
+			raw, _ := json.Marshal(map[string]string{
+				"original_path": trashRecord.OriginalPath,
+				"title":         trashRecord.Title,
+				"content":       snapshot,
+			})
+			purgeSnapshot = string(raw)
+		}
 		if err := purgeTrashedArticle(req.ID); err != nil {
+			recordOp(r, "post.purge", target, "永久删除回收站文章 "+target, purgeSnapshot, err, opSyncedByDefault())
 			RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 			return
 		}
+		recordOp(r, "post.purge", target, "永久删除回收站文章 "+target, purgeSnapshot, nil, opSyncedByDefault())
 		RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "Trash item permanently deleted"})
 		return
 	}
 	record, err := restoreTrashedArticle(req.ID)
 	if err != nil {
+		recordOp(r, "post.restore", target, "从回收站恢复文章 "+target, snapshot, err, opSyncedByDefault())
 		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
+	recordOp(r, "post.restore", target, "从回收站恢复文章 "+target, snapshot, nil, opSyncedByDefault())
 	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "Article restored", Data: record})
 }

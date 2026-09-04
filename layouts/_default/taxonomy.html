@@ -1,0 +1,26 @@
+{{ define "body-class" }}ws-taxonomy-page{{ end }}
+
+{{ define "main" }}
+<section class="ws-tax-wrap">
+    <span class="ws-watermark ws-watermark--tl" aria-hidden="true">{{ .Data.Singular }}</span>
+
+    <header class="ws-archives-header ws-tax-header" data-reveal>
+        <div class="ws-sec-head">
+            <span class="ws-sec-num">{{ if eq .Data.Singular "category" }}分类 · Category{{ else }}标签 · Tag{{ end }}</span>
+            <h1 class="ws-sec-title">{{ .Title }}</h1>
+            <p class="ws-sec-sub">{{ len .Pages }} 篇文章</p>
+        </div>
+    </header>
+
+    {{ $paginator := .Paginate (.Pages.ByDate.Reverse) }}
+    <section class="article-list--compact">
+        {{ range $paginator.Pages }}
+            {{ partial "article-list/compact" . }}
+        {{ end }}
+    </section>
+
+    {{ partial "pagination.html" . }}
+</section>
+
+{{ partialCached "footer/footer" . }}
+{{ end }}

@@ -1,0 +1,16 @@
+# 博主资料：首页「关于我」模块与 /about 页共用此文件
+# 修改这里即可同步两处展示
+
+name = "Vantalens"
+bio = "写代码，也写故事。在算法与推理小说之间来回穿行。"
+location = "中国 · 成都"
+identity = "软件工程专业在读"
+avatar = "img/avatar.png"
+
+# 兴趣标签胶囊
+tags = ["编程", "算法", "推理小说", "音乐"]
+
+# 社交入口
+github = "https://github.com/Vantalens"
+email = "hello@vantalens.com"
+rss = "/index.xml"

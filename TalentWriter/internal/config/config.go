@@ -87,6 +87,25 @@ func GetArticlesDBPath(hugoPath string) string {
 	return filepath.Join(hugoPath, ".talentwriter", "articles", "articles.db")
 }
 
+func GetOplogPath(hugoPath string) string {
+	if v := strings.TrimSpace(os.Getenv("OPLOG_PATH")); v != "" {
+		return v
+	}
+	if AuthorityBackendEnabled() {
+		return "/var/lib/vantalens/oplog/operations.jsonl"
+	}
+	return filepath.Join(hugoPath, ".talentwriter", "oplog", "operations.jsonl")
+}
+
+func AuthorityBackendEnabled() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("AUTHORITY_BACKEND"))) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
 func ResolveHugoPath(base string) string {
 	base = filepath.Clean(base)
 	candidates := []string{base}

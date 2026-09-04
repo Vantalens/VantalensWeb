@@ -3,6 +3,8 @@ pinned: true
 title: "高山流水，觅知音"
 description: "你好，欢迎来到我的博客"
 date: 2026-02-03T13:28:00+08:00
+categories:
+    - 随笔
 image: ""
 math: false
 license: ""

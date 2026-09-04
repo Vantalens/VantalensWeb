@@ -70,10 +70,12 @@ func HandleSaveContent(w http.ResponseWriter, r *http.Request) {
 	}
 	existing, err := readArticle(req.Path)
 	if err != nil {
+		recordOp(r, "post.save", req.Path, "保存文章 "+req.Path, "", err, opSyncedByDefault())
 		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
 	if req.Revision != "" && req.Revision != articleRevision(existing) {
+		recordOp(r, "post.save", req.Path, "保存文章 "+req.Path, existing, fmt.Errorf("revision conflict"), opSyncedByDefault())
 		RespondJSON(w, http.StatusConflict, models.APIResponse{Success: false, Message: "Article changed on disk; reload before saving"})
 		return
 	}
@@ -81,14 +83,17 @@ func HandleSaveContent(w http.ResponseWriter, r *http.Request) {
 	if req.Metadata != nil {
 		content, err = mergeArticleDocument(existing, req.Body, *req.Metadata)
 		if err != nil {
+			recordOp(r, "post.save", req.Path, "保存文章 "+req.Path, existing, err, opSyncedByDefault())
 			RespondJSON(w, http.StatusUnprocessableEntity, models.APIResponse{Success: false, Message: err.Error()})
 			return
 		}
 	}
 	if err := writeArticle(req.Path, content); err != nil {
+		recordOp(r, "post.save", req.Path, "保存文章 "+req.Path, existing, err, opSyncedByDefault())
 		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
+	recordOp(r, "post.save", req.Path, "保存文章 "+req.Path, existing, nil, opSyncedByDefault())
 	doc, _ := parseArticleDocument(content)
 	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "Saved", Data: doc})
 }
@@ -107,11 +112,14 @@ func HandleDeletePost(w http.ResponseWriter, r *http.Request) {
 	if err := decodeJSONBody(w, r, &req, 16<<10); err != nil {
 		return
 	}
+	snapshot, _ := readArticle(req.Path)
 	record, err := trashArticle(req.Path)
 	if err != nil {
+		recordOp(r, "post.delete", req.Path, "删除文章（移入回收站）"+req.Path, snapshot, err, opSyncedByDefault())
 		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
+	recordOp(r, "post.delete", req.Path, "删除文章（移入回收站）"+req.Path, snapshot, nil, opSyncedByDefault())
 	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "Moved to trash", Data: record})
 }
 
@@ -134,9 +142,11 @@ func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 	path, err := createArticle(req.Title, req.Categories, req.Body, req.Draft)
 	if err != nil {
+		recordOp(r, "post.create", req.Title, "新建文章「"+req.Title+"」", "", err, opSyncedByDefault())
 		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
+	recordOp(r, "post.create", strings.ReplaceAll(path, "\\", "/"), "新建文章「"+req.Title+"」", "", nil, opSyncedByDefault())
 	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Data: map[string]string{"path": path}})
 }
 

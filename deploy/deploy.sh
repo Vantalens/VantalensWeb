@@ -34,6 +34,7 @@ REMOTE_DATA_DIR="/var/lib/vantalens"
 REMOTE_WORKTREE_DIR="${REMOTE_DATA_DIR}/site-worktree" # 尚不存在，脚本会创建
 REMOTE_PUBLISH_DIR="${REMOTE_DATA_DIR}/publish"        # 尚不存在，脚本会创建
 REMOTE_COMMENTS_DIR="${REMOTE_DATA_DIR}/comments"
+REMOTE_OPLOG_DIR="${REMOTE_DATA_DIR}/oplog"           # 操作日志目录（2026-09 新增）
 REMOTE_SERVICE_USER="vantalens"
 REMOTE_SERVICE_GROUP="vantalens"
 SYSTEMD_SERVICE="talentwriter"
@@ -166,7 +167,7 @@ ssh "${SSH_HOST}" "
 log "4/9 创建缺失的数据目录并修正属主"
 ssh "${SSH_HOST}" "
     set -e
-    for d in '${REMOTE_WORKTREE_DIR}' '${REMOTE_PUBLISH_DIR}' '${REMOTE_COMMENTS_DIR}'; do
+    for d in '${REMOTE_WORKTREE_DIR}' '${REMOTE_PUBLISH_DIR}' '${REMOTE_COMMENTS_DIR}' '${REMOTE_OPLOG_DIR}'; do
         if [ ! -d \"\$d\" ]; then
             echo \"    创建 \$d\"
             sudo mkdir -p \"\$d\"

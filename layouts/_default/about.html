@@ -2,10 +2,32 @@
 
 {{ define "main" }}
 <section class="ws-about-wrap">
-    <header class="ws-about-header">
-        <h1>{{ .Title }}</h1>
+    <header class="ws-about-header" data-reveal>
+        <div class="ws-sec-head">
+            <span class="ws-sec-num">壹 · No.01</span>
+            <h1 class="ws-sec-title">关于我</h1>
+            <p class="ws-sec-sub">About</p>
+        </div>
         <p class="ws-page-poetic-line">把散落的思绪，整理成可回望的路径</p>
     </header>
+
+    {{ $profile := .Site.Data.profile }}
+    <div class="ws-about-card ws-about-card--page" data-reveal>
+        <img class="ws-about-avatar" src="{{ $profile.avatar | relURL }}" alt="{{ $profile.name }} 的头像" loading="lazy">
+        <div class="ws-about-body">
+            <h3 class="ws-about-name">{{ $profile.name }}</h3>
+            <p class="ws-about-bio">{{ $profile.bio }}</p>
+            <p class="ws-about-meta">{{ $profile.location }} · {{ $profile.identity }}</p>
+            <div class="ws-chips">
+                {{ range $profile.tags }}<span class="ws-chip">{{ . }}</span>{{ end }}
+            </div>
+            <nav class="ws-about-links" aria-label="Social Links">
+                <a href="{{ $profile.github }}" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <a href="mailto:{{ $profile.email }}">邮件</a>
+                <a href="{{ $profile.rss | relURL }}">RSS</a>
+            </nav>
+        </div>
+    </div>
 
     <article class="ws-about-content article-content">
         {{ .Content }}

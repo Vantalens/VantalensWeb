@@ -62,6 +62,7 @@ func HandleAdminCommentAction(w http.ResponseWriter, r *http.Request) {
 	}
 	addStage("backup_remote_comments_db", true, backup)
 
+	snapshot := snapshotCommentByID(id)
 	switch action {
 	case "approve":
 		err = comment.ApproveComment("", id)
@@ -71,6 +72,7 @@ func HandleAdminCommentAction(w http.ResponseWriter, r *http.Request) {
 		err = http.ErrNotSupported
 	}
 	if err != nil {
+		recordOp(r, "comment."+action, id, "评论"+action+" "+id, snapshot, err, opSyncedByDefault())
 		addStage("execute_remote_transaction", false, err.Error())
 		status := http.StatusInternalServerError
 		if strings.Contains(strings.ToLower(err.Error()), "not found") {
@@ -79,6 +81,7 @@ func HandleAdminCommentAction(w http.ResponseWriter, r *http.Request) {
 		RespondJSON(w, status, models.APIResponse{Success: false, Message: err.Error(), Data: stages})
 		return
 	}
+	recordOp(r, "comment."+action, id, "评论"+action+" "+id, snapshot, nil, opSyncedByDefault())
 	addStage("execute_remote_transaction", true, action+" succeeded")
 	RespondJSON(w, http.StatusOK, models.APIResponse{Success: true, Message: "remote comment " + action + " succeeded", Data: stages})
 }

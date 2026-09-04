@@ -17,12 +17,12 @@ contentDir = "content/zh-cn"
         icon = "home"
 
 [[zh-cn.menu.main]]
-    identifier = "archives"
-    name = "归档"
-    pageRef = "/page/archives"
+    identifier = "categories"
+    name = "分类"
+    url = "/categories/"
     weight = 2
     [zh-cn.menu.main.params]
-        icon = "archives"
+        icon = "categories"
 
 [[zh-cn.menu.main]]
     identifier = "search"

@@ -41,6 +41,7 @@ func HandlePublish(w http.ResponseWriter, r *http.Request) {
 	outputPath := strings.TrimSpace(config.GetEnv("PUBLISH_OUTPUT_PATH", filepath.Join(hugoPath, "public")))
 	hugoPath, outputPath, err := validatePublishPaths(hugoPath, outputPath)
 	if err != nil {
+		recordOp(r, "publish", outputPath, "生成发布产物", "", err, opSyncedByDefault())
 		RespondJSON(w, http.StatusBadRequest, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
@@ -49,6 +50,7 @@ func HandlePublish(w http.ResponseWriter, r *http.Request) {
 	if currentPublish.State == "running" {
 		status := currentPublish
 		publishMu.Unlock()
+		recordOp(r, "publish", outputPath, "生成发布产物", "", fmt.Errorf("a publish is already running"), opSyncedByDefault())
 		RespondJSON(w, http.StatusConflict, models.APIResponse{Success: false, Message: "A publish is already running", Data: status})
 		return
 	}
@@ -62,6 +64,7 @@ func HandlePublish(w http.ResponseWriter, r *http.Request) {
 	publishMu.Unlock()
 
 	go runPublish(status.ID, hugoPath, outputPath)
+	recordOp(r, "publish", outputPath, "生成发布产物到 "+outputPath, "", nil, opSyncedByDefault())
 	RespondJSON(w, http.StatusAccepted, models.APIResponse{Success: true, Message: "Publish started", Data: status})
 }
 

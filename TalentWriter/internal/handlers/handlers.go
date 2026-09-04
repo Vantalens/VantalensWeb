@@ -378,10 +378,13 @@ func HandleApproveComment(w http.ResponseWriter, r *http.Request) {
 	}
 	path := r.URL.Query().Get("path")
 	id := r.URL.Query().Get("id")
+	snapshot := snapshotCommentByID(id)
+	ensureOplogID(r)
 	if remoteAdminConfigured() {
 		remotePath := "/api/admin/comments/" + url.PathEscape(id) + "/approve"
 		result, err := proxyRemoteAdmin(r, http.MethodPost, remotePath, nil)
 		if err != nil {
+			recordOp(r, "comment.approve", id, "审核评论 "+id, snapshot, err, false)
 			RespondJSON(w, http.StatusBadGateway, models.APIResponse{
 				Success: false,
 				Message: "远端评论审核失败，未执行本地写入兜底: " + err.Error(),
@@ -389,6 +392,7 @@ func HandleApproveComment(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
+		recordOp(r, "comment.approve", id, "审核评论 "+id, snapshot, nil, true)
 		result.Response.Message = "评论已在服务器权威后端审核"
 		RespondJSON(w, http.StatusOK, result.Response)
 		return
@@ -401,9 +405,11 @@ func HandleApproveComment(w http.ResponseWriter, r *http.Request) {
 		return comment.ApproveComment(path, id)
 	})
 	if err != nil {
+		recordOp(r, "comment.approve", id, "审核评论 "+id, snapshot, err, opSyncedByDefault())
 		RespondJSON(w, commentMutationStatus(err), models.APIResponse{Success: false, Message: err.Error(), Data: stages})
 		return
 	}
+	recordOp(r, "comment.approve", id, "审核评论 "+id, snapshot, nil, opSyncedByDefault())
 	RespondJSON(w, 200, models.APIResponse{Success: true, Message: "评论已审核并写回服务器", Data: stages})
 }
 
@@ -417,10 +423,13 @@ func HandleDeleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 	path := r.URL.Query().Get("path")
 	id := r.URL.Query().Get("id")
+	snapshot := snapshotCommentByID(id)
+	ensureOplogID(r)
 	if remoteAdminConfigured() {
 		remotePath := "/api/admin/comments/" + url.PathEscape(id) + "/delete"
 		result, err := proxyRemoteAdmin(r, http.MethodPost, remotePath, nil)
 		if err != nil {
+			recordOp(r, "comment.delete", id, "删除评论 "+id, snapshot, err, false)
 			RespondJSON(w, http.StatusBadGateway, models.APIResponse{
 				Success: false,
 				Message: "远端评论删除失败，未执行本地写入兜底: " + err.Error(),
@@ -428,6 +437,7 @@ func HandleDeleteComment(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
+		recordOp(r, "comment.delete", id, "删除评论 "+id, snapshot, nil, true)
 		result.Response.Message = "评论已在服务器权威后端删除"
 		RespondJSON(w, http.StatusOK, result.Response)
 		return
@@ -439,9 +449,11 @@ func HandleDeleteComment(w http.ResponseWriter, r *http.Request) {
 		return comment.DeleteComment(path, id)
 	})
 	if err != nil {
+		recordOp(r, "comment.delete", id, "删除评论 "+id, snapshot, err, opSyncedByDefault())
 		RespondJSON(w, commentMutationStatus(err), models.APIResponse{Success: false, Message: err.Error(), Data: stages})
 		return
 	}
+	recordOp(r, "comment.delete", id, "删除评论 "+id, snapshot, nil, opSyncedByDefault())
 	RespondJSON(w, 200, models.APIResponse{Success: true, Message: "评论已删除并写回服务器", Data: stages})
 }
 
@@ -479,10 +491,13 @@ func HandleSaveSettings(w http.ResponseWriter, r *http.Request) {
 	if err := decodeJSONBody(w, r, &settings, 32<<10); err != nil {
 		return
 	}
+	snapshot := snapshotCommentSettings()
 	if err := comment.SaveSettings(settings); err != nil {
+		recordOp(r, "settings.save", "comment_settings", "保存评论设置", snapshot, err, opSyncedByDefault())
 		RespondJSON(w, 500, models.APIResponse{Success: false, Message: err.Error()})
 		return
 	}
+	recordOp(r, "settings.save", "comment_settings", "保存评论设置", snapshot, nil, opSyncedByDefault())
 	RespondJSON(w, 200, models.APIResponse{Success: true})
 }
 

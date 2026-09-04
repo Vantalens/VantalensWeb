@@ -108,6 +108,9 @@ func proxyRemoteAdmin(r *http.Request, method, remotePath string, body []byte) (
 	} else if authHeader := strings.TrimSpace(r.Header.Get("Authorization")); authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
 	}
+	if oplogID := strings.TrimSpace(r.Header.Get("X-Oplog-Id")); oplogID != "" {
+		req.Header.Set("X-Oplog-Id", oplogID)
+	}
 
 	start := time.Now()
 	client := &http.Client{Timeout: 10 * time.Second}

@@ -1,0 +1,64 @@
+{{ define "body-class" }}{{ if eq .Kind "term" }}ws-taxonomy-page{{ else }}ws-categories-page{{ end }}{{ end }}
+
+{{ define "main" }}
+{{ if eq .Kind "term" }}
+{{/* ===== 分类词页：/categories/<名>/ ===== */}}
+<section class="ws-tax-wrap">
+    <span class="ws-watermark ws-watermark--tl" aria-hidden="true">{{ .Data.Singular }}</span>
+
+    <header class="ws-archives-header ws-tax-header" data-reveal>
+        <div class="ws-sec-head">
+            <span class="ws-sec-num">分类 · Category</span>
+            <h1 class="ws-sec-title">{{ .Title }}</h1>
+            <p class="ws-sec-sub">{{ len .Pages }} 篇文章</p>
+        </div>
+    </header>
+
+    {{ $paginator := .Paginate (.Pages.ByDate.Reverse) }}
+    <section class="article-list--compact">
+        {{ range $paginator.Pages }}
+            {{ partial "article-list/compact" . }}
+        {{ end }}
+    </section>
+
+    {{ partial "pagination.html" . }}
+</section>
+{{ else }}
+{{/* ===== 分类总览卡片墙：/categories/ ===== */}}
+<section class="ws-catwall-wrap">
+    <span class="ws-watermark ws-watermark--tl" aria-hidden="true">Categories</span>
+
+    <header class="ws-archives-header ws-catwall-header" data-reveal>
+        <h1>分类</h1>
+        <p>按主题归档的全部文章</p>
+        <p class="ws-page-poetic-line">万物各归其位</p>
+    </header>
+
+    {{ $terms := .Pages }}
+    {{ $nums := slice "壹" "贰" "叁" "肆" "伍" "陆" "柒" "捌" "玖" "拾" }}
+    {{ if $terms }}
+    <section class="ws-catwall-grid" aria-label="Categories">
+        {{ range $i, $t := $terms.ByTitle }}
+        {{ $n := index $nums (mod $i 10) }}
+        <a class="ws-cat-card" href="{{ $t.RelPermalink }}" data-reveal style="--reveal-delay: {{ printf "%.2fs" (mul $i 0.05) }};">
+            <span class="ws-sec-num">{{ printf "%s · No.%02d" $n (add $i 1) }}</span>
+            <h2 class="ws-cat-name">{{ $t.Title }}</h2>
+            <p class="ws-cat-count">{{ len $t.Pages }} 篇文章</p>
+            {{ $sorted := $t.Pages.ByDate.Reverse }}
+            {{ if gt (len $sorted) 0 }}
+            <p class="ws-cat-latest">最新：{{ (index $sorted 0).Title }}</p>
+            {{ end }}
+        </a>
+        {{ end }}
+    </section>
+    {{ else }}
+    <div class="ws-empty-state" data-reveal>
+        <h3>暂无分类</h3>
+        <p>文章还没有设置分类。</p>
+    </div>
+    {{ end }}
+</section>
+{{ end }}
+
+{{ partialCached "footer/footer" . }}
+{{ end }}

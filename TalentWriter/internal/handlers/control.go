@@ -61,6 +61,15 @@ func HandleCommentsPage(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(CommentsPageHTML()))
 }
 
+func HandleHistoryPage(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/platform/history" {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte(HistoryPageHTML()))
+}
+
 func HandleControlStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		RespondJSON(w, http.StatusMethodNotAllowed, models.APIResponse{Success: false, Message: "Method not allowed"})

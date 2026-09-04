@@ -309,6 +309,69 @@ func ApproveComment(postPath, commentID string) error {
 	})
 }
 
+// GetComment returns one comment row by id, for oplog snapshots and rollback.
+func GetComment(commentID string) (models.Comment, bool, error) {
+	conn, err := getDB()
+	if err != nil {
+		return models.Comment{}, false, err
+	}
+	commentID = strings.TrimSpace(commentID)
+	if commentID == "" {
+		return models.Comment{}, false, fmt.Errorf("comment id is required")
+	}
+	rows, err := conn.Query(`
+SELECT id, author, phone, email, content, created_at, approved, post_path, ip_address, user_agent,
+       parent_id, images_json, fingerprint, captcha_score, vpn_suspected, risk_reasons_json
+FROM comments
+WHERE id = ?`, commentID)
+	if err != nil {
+		return models.Comment{}, false, err
+	}
+	defer rows.Close()
+	comments, err := scanComments(rows)
+	if err != nil {
+		return models.Comment{}, false, err
+	}
+	if len(comments) == 0 {
+		return models.Comment{}, false, nil
+	}
+	return comments[0], true, nil
+}
+
+// RestoreComment re-inserts a comment row from an oplog snapshot
+// (rollback of comment.delete). INSERT OR REPLACE keeps it idempotent.
+func RestoreComment(c models.Comment) error {
+	conn, err := getDB()
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(c.ID) == "" {
+		return fmt.Errorf("comment id is required")
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	createdAt := strings.TrimSpace(c.Timestamp)
+	if createdAt == "" {
+		createdAt = now
+	}
+	reasonsJSON, _ := json.Marshal(c.RiskReasons)
+	imagesJSON, _ := json.Marshal(c.Images)
+	result, err := conn.Exec(`
+INSERT OR REPLACE INTO comments (
+	id, post_path, author, phone, email, content, parent_id, approved, ip_address, user_agent,
+	fingerprint, captcha_score, vpn_suspected, risk_reasons_json, images_json, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		c.ID, c.PostPath, c.Author, c.Phone, c.Email, c.Content, c.ParentID, boolToInt(c.Approved),
+		c.IPAddress, c.UserAgent, c.Fingerprint, c.CaptchaScore, boolToInt(c.VPNSuspected),
+		string(reasonsJSON), string(imagesJSON), createdAt, now)
+	if err != nil {
+		return err
+	}
+	if n, _ := result.RowsAffected(); n == 0 {
+		return fmt.Errorf("comment restore affected no rows")
+	}
+	return nil
+}
+
 func DeleteComment(postPath, commentID string) error {
 	conn, err := getDB()
 	if err != nil {

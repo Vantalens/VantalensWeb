@@ -100,6 +100,7 @@ func platformHTML(title, subtitle, active, body, script string) string {
         <a class="{{POSTS_ACTIVE}}" href="/platform/posts">文章</a>
         <a class="{{COMMENTS_ACTIVE}}" href="/platform/comments">评论</a>
         <a class="{{ANALYTICS_ACTIVE}}" href="/platform/analytics">监控</a>
+        <a class="{{HISTORY_ACTIVE}}" href="/platform/history">记录</a>
       </nav>
     </header>
     <section class="statusbar">
@@ -155,6 +156,7 @@ func platformHTML(title, subtitle, active, body, script string) string {
 		"{{POSTS_ACTIVE}}":     activeClass(active, "posts"),
 		"{{COMMENTS_ACTIVE}}":  activeClass(active, "comments"),
 		"{{ANALYTICS_ACTIVE}}": activeClass(active, "analytics"),
+		"{{HISTORY_ACTIVE}}":   activeClass(active, "history"),
 	}
 	for k, v := range repl {
 		page = strings.ReplaceAll(page, k, v)
@@ -196,7 +198,7 @@ func PlatformHomeHTML() string {
     </section>
     <section class="panel">
       <div class="row between"><div><h2 class="section-title">后台总览</h2><div class="muted small">入口页只保留核心业务状态。具体操作进入对应页面完成。</div></div><button class="btn" onclick="refreshHome(this)">刷新总览</button></div>
-      <div class="row" style="margin-top:12px"><span id="publish-pill" class="pill">发布状态未检查</span><span id="sync-pill" class="pill">同步状态未检查</span></div>
+      <div class="row" style="margin-top:12px"><span id="publish-pill" class="pill">发布状态未检查</span><span id="sync-pill" class="pill">同步状态未检查</span><span id="oplog-pill" class="pill">操作记录未检查</span></div>
       <div id="home-status" class="status" style="margin-top:12px">等待刷新</div>
     </section>`
 	script := `
@@ -204,11 +206,12 @@ func PlatformHomeHTML() string {
     function renderHomeSync(remote){const el=$('sync-pill');if(!el)return;remote=remote||{};el.textContent=remote.enabled?(remote.reachable?'远端实时连接':'远端不可达'):'本机权威模式';el.className=remote.reachable||!remote.enabled?'badge ok':'badge err'}
     async function refreshHome(btn){setButton(btn,true,'刷新中...');try{if(!hasToken()){setText('home-status','请先完成顶部登录','error');toast('请先登录后再刷新总览','err');return}
       const get=(u)=>authFetch(u).then(r=>r.json().catch(()=>({}))).catch(()=>({}));
-      const [posts,comments,stats,publish,sync]=await Promise.all([get('/api/posts'),get('/api/comments?all=1'),get('/api/analytics/stats?limit=1'),get('/api/publish/status'),get('/api/sync/status')]);
+      const [posts,comments,stats,publish,sync,oplog]=await Promise.all([get('/api/posts'),get('/api/comments?all=1'),get('/api/analytics/stats?limit=1'),get('/api/publish/status'),get('/api/sync/status'),get('/api/oplog/list?limit=1')]);
       $('post-count').textContent=Array.isArray(posts.data)?posts.data.length:'-';
       const cs=Array.isArray(comments.data)?comments.data:[];$('comment-count').textContent=cs.filter(c=>!c.approved).length+' 待审';
       $('visit-count').textContent=stats?.data?.total_views??'-';
       renderHomePublish(publish?.data);renderHomeSync(sync?.data?.remote);
+      const opEl=$('oplog-pill');if(opEl&&oplog?.data){const total=oplog.data.total??0,pending=oplog.data.pending??0;opEl.textContent='最近操作 '+total+' 条 / 待同步 '+pending+' 条';opEl.className=pending>0?'badge warn':'badge ok'}
       setText('home-status','总览已刷新：文章 '+$('post-count').textContent+'，待审评论 '+$('comment-count').textContent+'，访问 '+$('visit-count').textContent,'success');checkShell()}catch(e){setText('home-status','刷新失败：'+e.message,'error');toast('总览刷新失败：'+e.message,'err')}finally{setButton(btn,false)}}
     document.querySelectorAll('.home-card').forEach(card=>card.addEventListener('click',e=>{if(hasToken())return;e.preventDefault();toast('请先登录后再进入工作台','err');const p=$('login-pass');if(p){p.scrollIntoView({behavior:'smooth',block:'center'});p.focus()}}));
     window.addEventListener('auth-ready',()=>refreshHome()); setTimeout(()=>{if(hasToken()) refreshHome()},350);`
@@ -336,4 +339,48 @@ func postsPageScript() string {
     window.addEventListener('beforeunload',e=>{if(state.dirty){e.preventDefault();e.returnValue=''}});
     $('trash-list').addEventListener('click',e=>{const btn=e.target.closest('.trash-action');if(btn)trashAction(btn.dataset.action,btn.dataset.id,btn)});
     bindPosts();setAuthState();updateEditorMeta();window.addEventListener('auth-ready',()=>Promise.all([loadPosts(),loadTrash(),loadPublishStatus()]));if(hasToken())Promise.all([loadPosts(),loadTrash(),loadPublishStatus()]);`
+}
+
+func HistoryPageHTML() string {
+	body := `
+    <section class="panel">
+      <div class="row between"><div><h2 class="section-title">操作记录</h2><div class="muted small">所有文章、评论、设置、发布操作都会落账。失败的操作也会记录，带快照的操作可以回溯。</div></div><button class="btn primary" onclick="loadHistory(this)">刷新记录</button></div>
+      <div class="grid three" style="margin-top:12px">
+        <select id="filter-type" onchange="loadHistory()">
+          <option value="">全部类型</option>
+          <option value="post.save">文章保存</option>
+          <option value="post.create">文章新建</option>
+          <option value="post.delete">文章删除</option>
+          <option value="post.restore">文章恢复</option>
+          <option value="post.purge">永久删除</option>
+          <option value="comment.approve">评论审核</option>
+          <option value="comment.delete">评论删除</option>
+          <option value="settings.save">设置保存</option>
+          <option value="publish">发布</option>
+        </select>
+        <span id="history-summary" class="pill">等待刷新</span>
+        <span id="history-status" class="status">等待操作</span>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn" onclick="compareRemote(this)">与远端对比</button><button class="btn" onclick="syncWithRemote('push',this)">推送本地到远端</button><button class="btn" onclick="syncWithRemote('pull',this)">拉取远端到本地</button></div>
+      <div id="compare-result" class="stack" style="margin-top:12px"></div>
+    </section>
+    <section class="panel">
+      <div id="history-list" class="list" style="max-height:none"><div class="muted">点击刷新加载操作记录。</div></div>
+    </section>`
+	script := `
+    let entries=[];
+    const TYPE_LABEL={'post.save':'文章保存','post.create':'文章新建','post.delete':'文章删除','post.restore':'文章恢复','post.purge':'永久删除','comment.approve':'评论审核','comment.delete':'评论删除','settings.save':'设置保存','publish':'发布'};
+    const ROLLBACKABLE={'post.save':1,'post.delete':1,'post.create':1,'post.restore':1,'comment.approve':1,'comment.delete':1,'settings.save':1};
+    function typeLabel(t){if(TYPE_LABEL[t])return TYPE_LABEL[t];if(t&&t.endsWith('.rollback'))return '回溯·'+(TYPE_LABEL[t.slice(0,-9)]||t.slice(0,-9));return t||'-'}
+    function badgeClass(e){if(e.result&&e.result!=='success')return 'badge err';if(e.type==='post.purge'||e.type==='comment.delete'||e.type==='post.delete')return 'badge warn';return 'badge ok'}
+    async function loadHistory(btn){if(!hasToken()){setText('history-status','请先在顶部登录','error');return}setButton(btn,true,'刷新中...');try{const type=$('filter-type').value||'';const r=await authFetch('/api/oplog/list?limit=300'+(type?'&type='+encodeURIComponent(type):''));const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw new Error(d.message||'加载失败');entries=Array.isArray(d?.data?.entries)?d.data.entries:[];renderHistory();const pending=d?.data?.pending??0;$('history-summary').textContent='总计 '+(d?.data?.total??entries.length)+' 条，待同步 '+pending+' 条';setText('history-status','记录已刷新','success')}catch(e){setText('history-status','刷新失败：'+e.message,'error');toast('记录刷新失败：'+e.message,'err')}finally{setButton(btn,false)}}
+    function renderHistory(){const box=$('history-list');if(!entries.length){box.innerHTML='<div class="muted">暂无操作记录。</div>';return}box.innerHTML=entries.map(e=>{const failed=e.result&&e.result!=='success';const syncDot=e.synced?'<span style="color:var(--teal)" title="已在远端落账">●</span>':'<span style="color:var(--gold)" title="待同步">○</span>';const canRollback=!failed&&!String(e.type||'').endsWith('.rollback')&&(ROLLBACKABLE[e.type]||(e.type==='post.purge'&&e.snapshot));return '<article class="item"><div class="row between" style="align-items:flex-start"><div style="flex:1;min-width:0;cursor:pointer" data-opid="'+escapeHtml(e.id)+'" class="op-toggle"><div class="row" style="gap:8px"><span class="'+badgeClass(e)+'">'+escapeHtml(typeLabel(e.type))+'</span>'+syncDot+'<span class="item-title">'+escapeHtml(e.summary||e.type)+'</span></div><div class="item-meta" style="margin-top:6px"><span>'+escapeHtml(formatBeijingTime(e.ts))+'</span><span>'+escapeHtml(e.actor||'-')+'</span><span class="mono">'+escapeHtml(e.target||'-')+'</span><span>'+escapeHtml(e.origin||'-')+'</span></div>'+(failed?'<div class="small" style="color:var(--danger);margin-top:6px">'+escapeHtml(e.result)+'</div>':'')+'</div><div class="row" style="flex-wrap:nowrap">'+(canRollback?'<button class="btn op-rollback" data-id="'+escapeHtml(e.id)+'">回溯到此</button>':'')+'</div></div><details style="margin-top:10px" id="detail-box-'+escapeHtml(e.id)+'"><summary>详情与快照</summary><div class="detail-body" id="detail-'+escapeHtml(e.id)+'">展开后加载。</div></details></article>'}).join('')}
+    async function toggleDetail(id,detailEl){detailEl.textContent='加载中...';try{const r=await authFetch('/api/oplog/entry?id='+encodeURIComponent(id));const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw new Error(d.message||'加载失败');const e=d.data||{};let text='ID: '+e.id+'\n时间: '+formatBeijingTime(e.ts)+'\n类型: '+e.type+'\n来源: '+e.origin+'\n操作者: '+e.actor+'\n目标: '+(e.target||'-')+'\n结果: '+e.result+'\n远端落账: '+(e.synced?'是':'否');if(e.snapshot)text+='\n\n--- 改动前快照 ---\n'+e.snapshot;detailEl.textContent=text}catch(err){detailEl.textContent='失败：'+err.message}}
+    async function rollbackOp(id,btn){if(!confirm('确定回溯这条操作？系统将按快照恢复到该操作之前的状态。'))return;setButton(btn,true,'回溯中...');try{const r=await authFetch('/api/oplog/rollback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw new Error(d.message||'回溯失败');toast(d.message||'已回溯','ok');await loadHistory()}catch(e){toast('回溯失败：'+e.message,'err');setText('history-status','回溯失败：'+e.message,'error')}finally{setButton(btn,false)}}
+    function renderCompare(data){const box=$('compare-result');const group=(title,list,color)=>{const rows=(list||[]).map(e=>'<div class="item"><div class="row" style="gap:8px"><span class="badge '+(color||'warn')+'">'+escapeHtml(typeLabel(e.type))+'</span><span class="item-title">'+escapeHtml(e.summary||e.type)+'</span></div><div class="item-meta" style="margin-top:4px"><span>'+escapeHtml(formatBeijingTime(e.ts))+'</span><span class="mono">'+escapeHtml(e.target||'-')+'</span></div></div>').join('')||'<div class="muted small">无差异。</div>';return '<div class="card"><h3 class="section-title">'+title+'（'+((list||[]).length)+'）</h3><div class="stack">'+rows+'</div></div>'};box.innerHTML='<div class="grid two">'+group('仅本地有（可推送）',data.local_only,'warn')+group('仅远端有（可拉取）',data.remote_only,'ok')+'</div>'}
+    async function compareRemote(btn){if(!hasToken()){setText('history-status','请先在顶部登录','error');return}setButton(btn,true,'对比中...');try{const r=await authFetch('/api/oplog/compare');const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw new Error(d.message||'对比失败');renderCompare(d.data||{});setText('history-status','对比完成：本地 '+((d.data||{}).local_total??0)+' 条，远端 '+((d.data||{}).remote_total??0)+' 条','success')}catch(e){setText('history-status','对比失败：'+e.message,'error');toast('对比失败：'+e.message,'err')}finally{setButton(btn,false)}}
+    async function syncWithRemote(direction,btn){if(!hasToken()){setText('history-status','请先在顶部登录','error');return}const label=direction==='push'?'推送本地到远端':'拉取远端到本地';if(!confirm('确定执行「'+label+'」？将逐条重放差异操作，允许部分失败。'))return;setButton(btn,true,'同步中...');try{const r=await authFetch('/api/oplog/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({direction})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw new Error(d.message||'同步失败');const data=d.data||{};const fails=(data.results||[]).filter(x=>!x.success);const msg=label+'完成：成功 '+(data.succeeded??0)+' 条，失败 '+(data.failed??0)+' 条';setText('history-status',msg,(data.failed??0)>0?'error':'success');toast(msg,(data.failed??0)>0?'err':'ok');if(fails.length)$('compare-result').innerHTML='<div class="card"><h3 class="section-title">失败明细</h3><div class="stack">'+fails.map(x=>'<div class="item"><div class="item-title">'+escapeHtml(typeLabel(x.type))+' '+escapeHtml(x.target||'')+'</div><div class="small" style="color:var(--danger)">'+escapeHtml(x.error||'')+'</div></div>').join('')+'</div></div>';await loadHistory()}catch(e){setText('history-status','同步失败：'+e.message,'error');toast('同步失败：'+e.message,'err')}finally{setButton(btn,false)}}
+    $('history-list').addEventListener('click',e=>{const rb=e.target.closest('.op-rollback');if(rb){rollbackOp(rb.dataset.id,rb);return}const toggle=e.target.closest('.op-toggle');if(!toggle)return;const id=toggle.dataset.opid;const box=$('detail-box-'+id);if(box&&!box.open){box.open=true;const detail=$('detail-'+id);if(detail)toggleDetail(id,detail)}});
+    window.addEventListener('auth-ready',()=>loadHistory());if(hasToken())loadHistory();`
+	return platformHTML("操作记录", "操作日志、快照回溯与双向差异同步。记录只追加、不篡改；回溯本身也会落一条新记录。", "history", body, script)
 }

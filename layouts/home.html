@@ -29,30 +29,54 @@
             <p class="ws-hero-line ws-tl-line ws-motion-reveal ws-motion-reveal--rise is-visible" style="--reveal-delay: 0.24s;">{{ $heroLine }}</p>
             <p class="ws-soul-line ws-tl-quote ws-motion-reveal ws-motion-reveal--rise is-visible" data-soul-line style="--reveal-delay: 0.36s;"></p>
         </div>
+    </section>
 
-        <span class="ws-seal ws-seal--hero" aria-hidden="true">文</span>
+    {{ $profile := .Site.Data.profile }}
+    <section class="ws-about" aria-label="About">
+        <header class="ws-sec-head ws-motion-reveal ws-motion-reveal--rise is-visible" style="--reveal-delay: 0.04s;">
+            <span class="ws-sec-num">壹 · No.01</span>
+            <h2 class="ws-sec-title">关于我</h2>
+            <p class="ws-sec-sub">About</p>
+        </header>
+        <div class="ws-about-card ws-motion-reveal ws-motion-reveal--rise" data-reveal style="--reveal-delay: 0.1s;">
+            <img class="ws-about-avatar" src="{{ $profile.avatar | relURL }}" alt="{{ $profile.name }} 的头像" loading="lazy">
+            <div class="ws-about-body">
+                <h3 class="ws-about-name">{{ $profile.name }}</h3>
+                <p class="ws-about-bio">{{ $profile.bio }}</p>
+                <p class="ws-about-meta">{{ $profile.location }} · {{ $profile.identity }}</p>
+                <div class="ws-chips">
+                    {{ range $profile.tags }}<span class="ws-chip">{{ . }}</span>{{ end }}
+                </div>
+                <nav class="ws-about-links" aria-label="Social Links">
+                    <a href="{{ $profile.github }}" target="_blank" rel="noopener noreferrer">GitHub</a>
+                    <a href="mailto:{{ $profile.email }}">邮件</a>
+                    <a href="{{ $profile.rss | relURL }}">RSS</a>
+                    <a href="{{ "/about/" | relURL }}">更多 →</a>
+                </nav>
+            </div>
+        </div>
     </section>
 
     <span class="ws-watermark ws-watermark--tl" aria-hidden="true">VANTALENS</span>
 
     <section class="ws-entry-grid" aria-label="Main Sections">
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/post/" | relURL }}" data-reveal style="--reveal-delay: 0.02s;">
-            <span class="ws-entry-num">壹 · No.01</span>
+            <span class="ws-entry-num">贰 · No.02</span>
             <h3>文章<span class="ws-entry-en">Writings</span></h3>
             <p>最近：{{ with index $recent 0 }}{{ .Title }}{{ else }}暂无文章{{ end }}</p>
         </a>
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/search/" | relURL }}" data-reveal style="--reveal-delay: 0.08s;">
-            <span class="ws-entry-num">贰 · No.02</span>
+            <span class="ws-entry-num">叁 · No.03</span>
             <h3>搜索<span class="ws-entry-en">Search</span></h3>
             <p>标题、标签、摘要一键检索</p>
         </a>
-        <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/archives/" | relURL }}" data-reveal style="--reveal-delay: 0.14s;">
-            <span class="ws-entry-num">叁 · No.03</span>
-            <h3>归档<span class="ws-entry-en">Archive</span></h3>
-            <p>沿时间线回看写作轨迹</p>
+        <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/categories/" | relURL }}" data-reveal style="--reveal-delay: 0.14s;">
+            <span class="ws-entry-num">肆 · No.04</span>
+            <h3>分类<span class="ws-entry-en">Categories</span></h3>
+            <p>按主题浏览全部文章分类</p>
         </a>
         <a class="ws-entry-card ws-motion-reveal ws-motion-reveal--rise" href="{{ "/links/" | relURL }}" data-reveal style="--reveal-delay: 0.2s;">
-            <span class="ws-entry-num">肆 · No.04</span>
+            <span class="ws-entry-num">伍 · No.05</span>
             <h3>友链<span class="ws-entry-en">Friends</span></h3>
             <p>同频站点与长期收藏</p>
         </a>
@@ -62,7 +86,7 @@
         <span class="ws-watermark ws-watermark--br" aria-hidden="true">Writings</span>
         <div class="ws-recent-head">
             <header class="ws-sec-head">
-                <span class="ws-sec-num">伍 · No.05</span>
+                <span class="ws-sec-num">陆 · No.06</span>
                 <h2 class="ws-sec-title">最近更新</h2>
                 <p class="ws-sec-sub">Recent Writings</p>
             </header>

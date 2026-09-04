@@ -80,8 +80,14 @@ func registerWriterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/comments/delete", handlers.WithCORS(handlers.HandleDeleteComment))
 	mux.HandleFunc("/api/settings", handlers.WithCORS(handlers.HandleGetSettings))
 	mux.HandleFunc("/api/settings/save", handlers.WithCORS(handlers.HandleSaveSettings))
+	mux.HandleFunc("/api/oplog/list", handlers.WithCORS(handlers.HandleOplogList))
+	mux.HandleFunc("/api/oplog/entry", handlers.WithCORS(handlers.HandleOplogEntry))
+	mux.HandleFunc("/api/oplog/rollback", handlers.WithCORS(handlers.HandleOplogRollback))
+	mux.HandleFunc("/api/oplog/compare", handlers.WithCORS(handlers.HandleOplogCompare))
+	mux.HandleFunc("/api/oplog/sync", handlers.WithCORS(handlers.HandleOplogSync))
 	mux.HandleFunc("/platform/posts", handlers.HandlePostsPage)
 	mux.HandleFunc("/platform/comments", handlers.HandleCommentsPage)
+	mux.HandleFunc("/platform/history", handlers.HandleHistoryPage)
 }
 
 func rootHandler(defaultPath string, mode Mode, build BuildInfo) http.HandlerFunc {
@@ -141,10 +147,16 @@ func apiInfoHandler(mode Mode, build BuildInfo) http.HandlerFunc {
 			"/api/comments/delete",
 			"/api/settings",
 			"/api/settings/save",
+			"/api/oplog/list",
+			"/api/oplog/entry",
+			"/api/oplog/rollback",
+			"/api/oplog/compare",
+			"/api/oplog/sync",
 			"/platform",
 			"/platform/control",
 			"/platform/posts",
 			"/platform/comments",
+			"/platform/history",
 			"/platform/analytics",
 		}
 

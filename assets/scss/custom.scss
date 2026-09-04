@@ -6430,7 +6430,7 @@ html::-webkit-scrollbar-thumb,
     --paper-ink-soft: #6b6365;
     --paper-accent: #c73e55;
     --paper-accent-soft: rgba(199, 62, 85, 0.09);
-    --paper-teal: #4f9e8f;
+    --paper-teal: #35776a;
     --paper-border: rgba(34, 30, 31, 0.24);
     --paper-border-strong: rgba(34, 30, 31, 0.55);
     --paper-shadow: rgba(34, 30, 31, 0.85);
@@ -6450,7 +6450,7 @@ html::-webkit-scrollbar-thumb,
     --card-background-selected: #efe9df;
     --card-text-color-main: var(--paper-ink);
     --card-text-color-secondary: var(--paper-ink-soft);
-    --card-text-color-tertiary: #8a8284;
+    --card-text-color-tertiary: #746c6e;
     --card-separator-color: rgba(34, 30, 31, 0.14);
     --card-border-radius: 2px;
     --article-font-size: 1.6rem;
@@ -6479,7 +6479,7 @@ html::-webkit-scrollbar-thumb,
     --card-background-selected: rgba(236, 229, 221, 0.10);
     --card-text-color-main: var(--paper-ink);
     --card-text-color-secondary: var(--paper-ink-soft);
-    --card-text-color-tertiary: #8a8078;
+    --card-text-color-tertiary: #968d85;
     --card-separator-color: rgba(236, 229, 221, 0.12);
 }
 
@@ -6821,40 +6821,6 @@ body::after {
 .ws-watermark--tl {
     left: -0.04em;
     top: -0.22em;
-}
-
-/* ---------- 签名细节 c：朱砂印章 ---------- */
-.ws-seal {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 54px;
-    height: 54px;
-    background: var(--paper-accent);
-    color: #fdf6f0;
-    border-radius: 6px;
-    transform: rotate(-4deg);
-    font-family: var(--font-serif-cn);
-    font-size: 1.65rem;
-    font-weight: 700;
-    line-height: 1;
-    box-shadow:
-        inset 0 0 0 2px rgba(253, 246, 240, 0.85),
-        3px 3px 0 var(--paper-shadow);
-    user-select: none;
-}
-
-.ws-seal--hero {
-    position: absolute;
-    right: clamp(18px, 3vw, 40px);
-    bottom: clamp(18px, 4vh, 40px);
-    z-index: 60;
-}
-
-.ws-seal--footer {
-    width: 44px;
-    height: 44px;
-    font-size: 1.3rem;
 }
 
 /* ---------- 签名细节 d：卡片元信息 + 小胶囊 ---------- */
@@ -7228,7 +7194,6 @@ html {
 
     .ws-global-petals,
     .ws-watermark,
-    .ws-seal,
     .ws-hero,
     .ws-hero-actions,
     .left-sidebar,
@@ -7450,4 +7415,175 @@ html {
     background: var(--paper) !important;
     background-image: none !important;
     border-color: var(--paper-border) !important;
+}
+
+/* ============================================================
+   2026-08-13 追加：关于我模块 / 分类卡片墙 / 分类词页 / 对比度修正
+   ============================================================ */
+
+/* ---------- 关于我模块（首页 + /about 页共用） ---------- */
+.ws-about {
+    margin-bottom: clamp(36px, 6vh, 64px);
+}
+
+.ws-about-card {
+    display: flex;
+    align-items: center;
+    gap: clamp(18px, 3vw, 36px);
+    padding: clamp(22px, 3.5vw, 40px);
+    background: var(--paper);
+    border: 1px solid var(--paper-border);
+    border-radius: 2px;
+    box-shadow: 3px 3px 0 var(--paper-shadow);
+}
+
+.ws-about-avatar {
+    flex-shrink: 0;
+    width: clamp(88px, 12vw, 128px);
+    height: clamp(88px, 12vw, 128px);
+    border-radius: 2px;
+    border: 1px solid var(--paper-border-strong);
+    object-fit: cover;
+}
+
+.ws-about-body {
+    min-width: 0;
+}
+
+.ws-about-name {
+    margin: 0;
+    font-family: var(--font-serif-mixed);
+    font-size: clamp(1.5rem, 2.4vw, 1.9rem);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--paper-ink);
+}
+
+.ws-about-bio {
+    margin: 8px 0 0;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--paper-ink);
+}
+
+.ws-about-meta {
+    margin: 4px 0 0;
+    font-size: 0.88rem;
+    color: var(--paper-ink-soft);
+}
+
+.ws-about-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.ws-about-links a {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--paper-accent);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--paper-accent);
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    text-decoration: none;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.ws-about-links a:hover {
+    background: var(--paper-accent);
+    color: var(--accent-color-text);
+}
+
+@media screen and (max-width: 600px) {
+    .ws-about-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* /about 页里的资料卡与正文保持同宽节奏 */
+.ws-about-card--page {
+    margin-bottom: clamp(28px, 4vh, 44px);
+}
+
+/* ---------- 分类卡片墙（/categories/ 总览） ---------- */
+.ws-catwall-wrap {
+    position: relative;
+}
+
+.ws-catwall-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: clamp(14px, 2vw, 22px);
+}
+
+.ws-cat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: clamp(18px, 2.4vw, 28px);
+    background: var(--paper);
+    border: 1px solid var(--paper-border);
+    border-radius: 2px;
+    text-decoration: none;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.ws-cat-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 3px 3px 0 var(--paper-shadow);
+    border-color: var(--paper-border-strong);
+}
+
+.ws-cat-name {
+    margin: 6px 0 0;
+    font-family: var(--font-serif-mixed);
+    font-size: clamp(1.35rem, 2vw, 1.7rem);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--paper-ink);
+}
+
+.ws-cat-count {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--paper-ink-soft);
+}
+
+.ws-cat-latest {
+    margin: 4px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--paper-ink-soft);
+    border-top: 1px dashed var(--card-separator-color);
+    padding-top: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------- 分类/标签词页 ---------- */
+.ws-tax-wrap {
+    position: relative;
+}
+
+.ws-tax-header .ws-sec-head {
+    margin-bottom: clamp(24px, 3.5vw, 40px);
+}
+
+/* ---------- 对比度修正（WCAG AA，2026-08-13 审计） ---------- */
+/* 暗色 hero 按钮：浅底上沿用亮粉 accent 仅 2.0:1，改用深朱红（同色相向暗） */
+[data-scheme="dark"] .wangscape-homepage .ws-hero-actions .ws-btn {
+    border-color: #93283b;
+    color: #93283b;
+}
+
+[data-scheme="dark"] .wangscape-homepage .ws-hero-actions .ws-btn:hover {
+    background: #93283b;
+    border-color: #93283b;
+    color: #fdf6f0;
 }
