@@ -67,6 +67,7 @@
 | `AUTHORITY_BACKEND` | `true` | 主 unit / `30-authority.conf` |
 | `DB_SYNC_ENABLED` | `false` | 主 unit |
 | `ReadWritePaths` | 含 comments / articles / analytics / site-worktree / publish | 主 unit |
+| `ReadWritePaths` | 另需含 `/opt/vantalens/site/content`（文章编辑/删除直接写 HUGO_PATH 下的 content，缺了会报 read-only file system） | drop-in `50-content-writable.conf` |
 | `ReadOnlyPaths` | 含 `/var/www/vantalens` | 主 unit |
 
 **禁止在未核对合并配置的情况下直接覆盖 drop-in 文件。** 如需改主 unit，先 `diff` 再手工更新。
