@@ -273,6 +273,7 @@ func AnalyticsHTML() string {
     <section class="statusbar">
       <span id="auth-status" class="tag">未登录</span>
       <span id="data-source" class="tag">数据源未检查</span>
+      <span id="last-updated" class="tag">最后更新 --</span>
       <span id="time-status" class="tag">北京时间 --</span>
       <div id="quick-login" class="quick-login hidden">
         <input id="login-user" value="vantalens" placeholder="用户名">
@@ -405,11 +406,13 @@ func AnalyticsHTML() string {
       setStatus('已登录');
       setButton(button, false);
       await loadStats();
+      startAutoRefresh();
     }
 
     function logout() {
       localStorage.removeItem('ws_token');
       localStorage.removeItem('auth_token');
+      stopAutoRefresh();
       setStatus('已退出');
     }
 
@@ -647,6 +650,9 @@ func AnalyticsHTML() string {
 
     let analyticsState = {};
     let mapRegions = [];
+    const AUTO_REFRESH_MS = 15000; // 监控数据每 15 秒自动刷新一次
+    let autoRefreshTimer = null;
+    let statsLoading = false;
 
     // 内联底图：拉取 /vendor/ SVG 后按比例缩放进地图，可受 CSS 控制陆地上色；
     // 失败时退化为 <image> 按投影比例引用（viewBox 与视口同为 2:1，不拉伸）。
@@ -837,41 +843,97 @@ func AnalyticsHTML() string {
         setStatus('未登录');
         return;
       }
+      if (statsLoading) return; // 防止自动刷新与手动刷新重叠
+      statsLoading = true;
       setButton(button, true, '刷新中...');
       setStatus('加载中...');
-      const res = await fetch('/api/analytics/stats?limit=300', { headers });
-      const result = await res.json().catch(() => ({}));
-      if (!res.ok || !result.success) {
+      try {
+        const res = await fetch('/api/analytics/stats?limit=300', { headers, cache: 'no-store' });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || !result.success) {
+          setButton(button, false);
+          setStatus(result.message || '加载失败');
+          return;
+        }
+        setStatus('已登录');
+        const source = document.getElementById('data-source');
+        if (source) source.textContent = result.message || '已读取访问统计';
         setButton(button, false);
-        setStatus(result.message || '加载失败');
-        return;
+        const stats = result.data || {};
+        analyticsState = stats;
+        document.getElementById('total-views').textContent = stats.total_views ?? '-';
+        document.getElementById('total-pages').textContent = stats.total_pages ?? '-';
+        document.getElementById('unique-ips').textContent = stats.unique_ips ?? '-';
+        document.getElementById('unique-sessions').textContent = stats.unique_sessions ?? '-';
+
+        document.getElementById('pages-box').innerHTML = renderTable(
+          ['页面', '访问', '独立 IP', '最近访问'],
+          (stats.pages || []).map(item => [
+            '<span class="mono">' + (item.path || '-') + '</span><br>' + (item.title || '-'),
+            String(item.views || 0),
+            String(item.uv || 0),
+            formatBeijingTime(item.last_seen)
+          ])
+        );
+
+        // 自动刷新会重渲染折叠组，先记住各组展开状态再恢复
+        const foldBoxes = ['regions-box', 'visitors-box', 'recent-box'];
+        const openState = {};
+        foldBoxes.forEach(id => {
+          const box = document.getElementById(id);
+          if (!box) return;
+          openState[id] = { rendered: !!box.querySelector('details.fold'), open: [] };
+          box.querySelectorAll('details.fold').forEach(d => {
+            const label = d.querySelector('summary strong');
+            if (label && d.open) openState[id].open.push(label.textContent);
+          });
+        });
+
+        renderMap(stats.regions || []);
+        document.getElementById('regions-box').innerHTML = renderRegionFolds(stats);
+        document.getElementById('visitors-box').innerHTML = renderVisitorFolds(stats.visitors || []);
+        document.getElementById('recent-box').innerHTML = renderRecentFolds(stats.recent_visits || []);
+
+        foldBoxes.forEach(id => {
+          const state = openState[id];
+          const box = document.getElementById(id);
+          if (!state || !state.rendered || !box) return; // 首次渲染保留默认展开
+          box.querySelectorAll('details.fold').forEach(d => {
+            const label = d.querySelector('summary strong');
+            if (label) d.open = state.open.includes(label.textContent);
+          });
+        });
+
+        const updated = document.getElementById('last-updated');
+        if (updated) updated.textContent = '最后更新 ' + formatBeijingTime(new Date().toISOString());
+      } catch (err) {
+        setButton(button, false);
+        setStatus('网络错误，待下次自动刷新');
+      } finally {
+        statsLoading = false;
       }
-      setStatus('已登录');
-      const source = document.getElementById('data-source');
-      if (source) source.textContent = result.message || '已读取访问统计';
-      setButton(button, false);
-      const stats = result.data || {};
-      analyticsState = stats;
-      document.getElementById('total-views').textContent = stats.total_views ?? '-';
-      document.getElementById('total-pages').textContent = stats.total_pages ?? '-';
-      document.getElementById('unique-ips').textContent = stats.unique_ips ?? '-';
-      document.getElementById('unique-sessions').textContent = stats.unique_sessions ?? '-';
-
-      document.getElementById('pages-box').innerHTML = renderTable(
-        ['页面', '访问', '独立 IP', '最近访问'],
-        (stats.pages || []).map(item => [
-          '<span class="mono">' + (item.path || '-') + '</span><br>' + (item.title || '-'),
-          String(item.views || 0),
-          String(item.uv || 0),
-          formatBeijingTime(item.last_seen)
-        ])
-      );
-
-      renderMap(stats.regions || []);
-      document.getElementById('regions-box').innerHTML = renderRegionFolds(stats);
-      document.getElementById('visitors-box').innerHTML = renderVisitorFolds(stats.visitors || []);
-      document.getElementById('recent-box').innerHTML = renderRecentFolds(stats.recent_visits || []);
     }
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      autoRefreshTimer = setInterval(() => {
+        if (document.hidden) return; // 标签页不可见时暂停，回到前台立即补一次
+        loadStats();
+      }, AUTO_REFRESH_MS);
+    }
+
+    function stopAutoRefresh() {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && (localStorage.getItem('ws_token') || localStorage.getItem('auth_token'))) {
+        loadStats();
+      }
+    });
 
     async function bootstrap() {
       refreshBeijingClock();
@@ -880,6 +942,7 @@ func AnalyticsHTML() string {
       setStatus((localStorage.getItem('ws_token') || localStorage.getItem('auth_token')) ? '已登录' : '未登录');
       if (localStorage.getItem('ws_token') || localStorage.getItem('auth_token')) {
         await loadStats();
+        startAutoRefresh();
       }
     }
     bootstrap();
