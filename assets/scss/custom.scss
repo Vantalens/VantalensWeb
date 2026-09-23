@@ -5263,13 +5263,8 @@ body.wangscape-homepage .ws-recent {
 }
 
 /* ===== Article sidebar and background final repair =====
-   This restores the image backdrop after the boundary fix and keeps article
-   sidebars compact enough to avoid the oversized card seen on desktop. */
-body:not(.wangscape-homepage) {
-    background:
-        linear-gradient(130deg, rgba(250, 221, 233, 0.55), rgba(241, 199, 218, 0.45)),
-        url('../img/home-hero.jpg') center center / cover no-repeat fixed !important;
-}
+   非首页不再铺整屏氛围图：正文页统一落在纸面底色上（末尾纸面覆盖层
+   已设 body 背景为 var(--paper-ground)），氛围图只保留在首页 hero。 */
 
 .article-page .main-container {
     max-width: calc(100% - 24px) !important;
@@ -6506,16 +6501,29 @@ body::after {
 /* ---------- Hero：氛围图只留在这里 ---------- */
 .wangscape-homepage .ws-cinema-hero {
     background:
-        linear-gradient(130deg, rgba(250, 221, 233, 0.5), rgba(241, 199, 218, 0.4)),
+        linear-gradient(160deg, rgba(43, 26, 38, 0.62) 0%, rgba(74, 40, 60, 0.5) 55%, rgba(43, 26, 38, 0.66) 100%),
         url('../img/home-hero.jpg') center center / cover no-repeat !important;
     border-radius: 4px;
     box-shadow: none;
 }
 
+/* 文字背后的径向 scrim：图片再亮，标题也可读 */
+.wangscape-homepage .ws-cinema-overlay {
+    position: relative;
+    z-index: 4; /* 必须高于 mist(2)/vignette(3)，否则雾气层模糊文字 */
+    padding: clamp(28px, 5vw, 56px) clamp(20px, 4vw, 48px);
+    background: radial-gradient(closest-side, rgba(30, 16, 24, 0.42), rgba(30, 16, 24, 0) 78%);
+    border-radius: 4px;
+}
+
 [data-scheme="dark"] .wangscape-homepage .ws-cinema-hero {
     background:
-        linear-gradient(130deg, rgba(30, 16, 24, 0.72), rgba(52, 28, 42, 0.66)),
+        linear-gradient(160deg, rgba(16, 9, 14, 0.78) 0%, rgba(38, 20, 33, 0.68) 55%, rgba(16, 9, 14, 0.8) 100%),
         url('../img/home-hero.jpg') center center / cover no-repeat !important;
+}
+
+[data-scheme="dark"] .wangscape-homepage .ws-cinema-overlay {
+    background: radial-gradient(closest-side, rgba(10, 6, 9, 0.5), rgba(10, 6, 9, 0) 78%);
 }
 
 /* hero 衬线字栈收敛到系统字体（CSP 禁外部字体） */
@@ -7586,4 +7594,66 @@ html {
     background: #93283b;
     border-color: #93283b;
     color: #fdf6f0;
+}
+
+/* ============================================================
+   编辑化打磨（2026-09-23）：列表页头去卡片化 + 标题衬线化
+   ============================================================ */
+
+/* 列表页页头：去掉白卡，改为衬线大字 + 底部发丝线 */
+.main.full-width > header .section-card,
+.main.full-width > header:has(.section-card) {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.main.full-width > header .section-card {
+    padding: clamp(8px, 1.5vw, 16px) 4px clamp(20px, 3vw, 32px) !important;
+    border-bottom: 1px solid var(--card-separator-color) !important;
+    margin-bottom: clamp(18px, 2.6vw, 30px) !important;
+}
+
+.main.full-width > header .section-term {
+    font-family: var(--font-serif-mixed) !important;
+    font-size: clamp(1.9rem, 3vw, 2.6rem) !important;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--paper-ink) !important;
+}
+
+.main.full-width > header .section-title {
+    font-family: var(--font-serif-mixed) !important;
+    font-size: clamp(1.35rem, 2vw, 1.7rem) !important;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--paper-ink) !important;
+}
+
+.main.full-width > header .section-count {
+    font-family: var(--font-serif-latin) !important;
+    font-style: normal;
+    letter-spacing: 0.08em;
+}
+
+/* 列表文章标题衬线化，与首页卡片一致 */
+.article-list--compact .article-title,
+.article-list--compact .article-title a,
+.article-list .article-title,
+.article-list h2 {
+    font-family: var(--font-serif-mixed) !important;
+    font-weight: 600;
+    letter-spacing: 0.015em;
+}
+
+/* 文章摘要降半调，拉开与标题的层级 */
+.article-list--compact .article-description {
+    opacity: 0.82;
+}
+
+/* 列表页头去重：section-term 已是大标题时，隐藏重复的 section-title */
+.main.full-width > header:has(.section-term) > .section-title {
+    display: none;
 }
